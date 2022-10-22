@@ -1,0 +1,326 @@
+// Do not remove the include below
+#include "baseflight.h"
+#include "board.h"
+#include "buzzer.h"
+#include "mw.h"
+#ifdef TELEMETRY
+#include "telemetry_common.h"
+#endif
+
+#include "drv_adc.h"
+#include "drv_gy86.h"
+#include "drv_hcsr04.h"
+#include "drv_i2c.h"
+#include "drv_pwm.h"
+#include "drv_system.h"
+
+#include "core/pif_log.h"
+
+#include <DueFlashStorage.h>
+#ifdef USE_I2C_WIRE
+	#include <Wire.h>
+#endif
+
+
+#define EFC_ACCESS_MODE_128 	0
+#define FLASH_ACCESS_MODE_128 	EFC_ACCESS_MODE_128
+#define EFC 					EFC0
+
+
+const char g_board_name[] = "Arduino Due";
+
+core_t core;
+int hw_revision = 0;
+
+static sensorDetect_t gyro_detect[] = { { (sensorDetectFuncPtr)gy86Detect, NULL }, { NULL, NULL } };
+static sensorDetect_t* acc_detect = NULL;
+static sensorDetect_t* baro_detect = NULL;
+static sensorDetect_t* msg_detect = NULL;
+
+
+static uint32_t _GetArduinoDueUid(uint32_t* unique_id)
+{
+	uint32_t ul_rc;
+
+	ul_rc = efc_init(EFC, FLASH_ACCESS_MODE_128, 4);
+	if (ul_rc != 0) {
+		return ul_rc;
+	}
+
+	return flash_read_unique_id(unique_id, 4);
+}
+
+#ifndef __PIF_NO_LOG__
+
+static uint16_t actLogSendData(PifComm* p_comm, uint8_t* p_buffer, uint16_t size)
+{
+	(void)p_comm;
+
+    return Serial.write((char *)p_buffer, size);
+}
+
+#endif
+
+static void featureDefault(void)
+{
+    featureSet(FEATURE_VBAT);
+}
+
+extern "C" {
+	int sysTickHook()
+	{
+		pif_sigTimer1ms();
+		pifTimerManager_sigTick(&g_timer_1ms);
+		return 0;
+	}
+}
+
+//The setup function is called once at startup of the sketch
+void setup()
+{
+    uint8_t i;
+    drv_pwm_config_t pwm_params;
+    drv_adc_config_t adc_params;
+    bool sensorsOK = false;
+#ifndef __PIF_NO_LOG__
+    static PifComm s_comm_log;
+#endif
+
+	analogReadResolution(12);
+	analogWriteResolution(12);
+
+    g_crystal_clock = F_CPU;
+    g_core_clock = SystemCoreClock;
+
+    _GetArduinoDueUid(g_unique_id);
+
+#ifndef __PIF_NO_LOG__
+	Serial.begin(115200);
+#endif
+
+#ifdef USE_I2C_WIRE
+	Wire.begin();
+	Wire.setClock(400000);
+#else
+	I2C_Init(I2C_CLOCK_400KHz);
+#endif
+
+    pif_Init(micros);
+
+    if (!pifTaskManager_Init(20)) return;
+
+#ifndef __PIF_NO_LOG__
+    pifLog_Init();
+#endif
+
+    if (!pifTimerManager_Init(&g_timer_1ms, PIF_ID_AUTO, 1000, 3)) return;		        	// 1000us
+
+#ifndef __PIF_NO_LOG__
+	if (!pifComm_Init(&s_comm_log, PIF_ID_AUTO)) return;
+    if (!pifComm_AttachTask(&s_comm_log, TM_PERIOD_MS, 1, TRUE)) return;					// 1ms
+    s_comm_log.act_send_data = actLogSendData;
+
+	if (!pifLog_AttachComm(&s_comm_log)) return;
+#endif
+
+	pifLog_Print(LT_INFO, "Start Baseflight\n");
+
+    if (!buzzerInit()) return;
+
+    // make sure (at compile time) that config struct doesn't overflow allocated flash pages
+    ct_assert(sizeof(mcfg) < STORAGE_VOLUME);
+
+    g_featureDefault = featureDefault;
+
+    if (!pifI2cPort_Init(&g_i2c_port, PIF_ID_AUTO, 5, I2C_TRANSFER_SIZE)) return;
+    g_i2c_port.act_read = actI2cRead;
+    g_i2c_port.act_write = actI2cWrite;
+
+    if (!initEEPROM()) return;
+    if (!checkFirstTime(false)) return;
+    readEEPROM();
+
+    systemInit();
+
+    // sleep for 100ms
+    pif_Delay1ms(100);
+
+    activateConfig();
+
+    // configure rssi ADC
+    if (mcfg.rssi_adc_channel > 0 && (mcfg.rssi_adc_channel == 1 || mcfg.rssi_adc_channel == 9 || mcfg.rssi_adc_channel == 5) && mcfg.rssi_adc_channel != mcfg.power_adc_channel)
+        adc_params.rssiAdcChannel = mcfg.rssi_adc_channel;
+    else {
+        adc_params.rssiAdcChannel = 0;
+        mcfg.rssi_adc_channel = 0;
+    }
+
+    adcInit(&adc_params);
+    // Check battery type/voltage
+    if (feature(FEATURE_VBAT))
+        batteryInit();
+    initBoardAlignment();
+
+    // drop out any sensors that don't seem to work, init all the others. halt if gyro is dead.
+    sensorsOK = sensorsAutodetect(gyro_detect, acc_detect, baro_detect, msg_detect);
+    pifLog_Printf(LT_INFO, "Sensor: %lxh(%d)", sensorsMask(), sensorsOK);
+
+    // if gyro was not detected due to whatever reason, we give up now.
+    if (!sensorsOK)
+        failureMode(3);
+
+    actLed1State(ON);
+    actLed0State(OFF);
+    for (i = 0; i < 10; i++) {
+        actLed1Toggle();
+        actLed0Toggle();
+        pif_Delay1ms(25);
+        actBuzzerAction(PIF_ID_BUZZER, ON);
+        pif_Delay1ms(25);
+        actBuzzerAction(PIF_ID_BUZZER, OFF);
+    }
+    actLed0State(OFF);
+    actLed1State(OFF);
+
+    imuInit(); // Mag is initialized inside imuInit
+    mixerInit(); // this will set core.useServo var depending on mixer type
+
+    serialInit(UART_PORT_1, mcfg.serial_baudrate, UART_PORT_NONE);
+
+    // when using airplane/wing mixer, servo/motor outputs are remapped
+    if (mcfg.mixerConfiguration == MULTITYPE_AIRPLANE || mcfg.mixerConfiguration == MULTITYPE_FLYING_WING || mcfg.mixerConfiguration == MULTITYPE_CUSTOM_PLANE)
+        pwm_params.airplane = true;
+    else
+        pwm_params.airplane = false;
+    pwm_params.usePPM = feature(FEATURE_PPM);
+    pwm_params.enableInput = !feature(FEATURE_SERIALRX); // disable inputs if using spektrum
+    pwm_params.useServos = core.useServo;
+    pwm_params.extraServos = cfg.gimbal_flags & GIMBAL_FORWARDAUX;
+    pwm_params.motorPwmRate = mcfg.motor_pwm_rate;
+    pwm_params.servoPwmRate = mcfg.servo_pwm_rate;
+    pwm_params.pwmFilter = mcfg.pwm_filter;
+    pwm_params.idlePulse = PULSE_1MS; // standard PWM for brushless ESC (default, overridden below)
+    if (feature(FEATURE_3D))
+        pwm_params.idlePulse = mcfg.neutral3d;
+    if (pwm_params.motorPwmRate > 500)
+        pwm_params.idlePulse = 0; // brushed motors
+    pwm_params.servoCenterPulse = mcfg.midrc;
+    pwm_params.failsafeThreshold = cfg.failsafe_detect_threshold;
+    switch (mcfg.power_adc_channel) {
+        case 1:
+            pwm_params.adcChannel = PWM2;
+            break;
+        case 9:
+            pwm_params.adcChannel = PWM8;
+            break;
+        default:
+            pwm_params.adcChannel = 0;
+            break;
+    }
+
+    pwmInit(&pwm_params);
+    core.numServos = pwm_params.numServos;
+
+    // configure PWM/CPPM read function and max number of channels. spektrum or sbus below will override both of these, if enabled
+    for (i = 0; i < RC_CHANS; i++)
+        rcData[i] = 1502;
+    rcReadRawFunc = pwmReadRawRC;
+
+    if (feature(FEATURE_SERIALRX)) {
+        switch (mcfg.serialrx_type) {
+            case SERIALRX_SPEKTRUM1024:
+            case SERIALRX_SPEKTRUM2048:
+                spektrumInit(UART_PORT_3, &rcReadRawFunc);
+                break;
+            case SERIALRX_SBUS:
+                // Configure hardware inverter on PB2. If not available, this has no effect.
+                actInvState(ON);
+                sbusInit(UART_PORT_3, &rcReadRawFunc);
+                break;
+            case SERIALRX_SUMD:
+                sumdInit(UART_PORT_3, &rcReadRawFunc);
+                break;
+            case SERIALRX_MSP:
+                mspInit(&rcReadRawFunc);
+                break;
+            case SERIALRX_IBUS:
+                ibusInit(UART_PORT_3, &rcReadRawFunc);
+                break;
+        }
+    }
+
+    // Optional GPS - available in both PPM, PWM and serialRX input mode, in PWM input, reduces number of available channels by 2.
+    // gpsInit will return if FEATURE_GPS is not enabled.
+    if (feature(FEATURE_GPS)) {
+        gpsInit(UART_PORT_2, mcfg.gps_baudrate);
+    }
+
+#ifdef SONAR
+    // sonar stuff only works with PPM
+    if (feature(FEATURE_SONAR)) {
+//      Sonar_init(hcsr04Init, SF_NONE);
+//      Sonar_init(hcsr04Init, SF_AVERAGE);
+        Sonar_init(hcsr04Init, SF_NOISE_CANCEL);
+    }
+#endif
+
+    core.numAuxChannels = constrain((mcfg.rc_channel_count - 4), 4, 8);
+
+
+#ifdef TELEMETRY
+    if (feature(FEATURE_TELEMETRY))
+        initTelemetry();
+#endif
+
+    previousTime = (*pif_act_timer1us)();
+    if (mcfg.mixerConfiguration == MULTITYPE_GIMBAL)
+        calibratingA = CALIBRATING_ACC_CYCLES;
+    calibratingG = CALIBRATING_GYRO_CYCLES;
+    calibratingB = CALIBRATING_BARO_CYCLES;             // 10 seconds init_delay + 200 * 25 ms = 15 seconds before ground pressure settles
+    f.SMALL_ANGLE = 1;
+
+    if (!pifTaskManager_Add(TM_PERIOD_MS, 1, taskLoop, NULL, TRUE)) return;                   	    // 1ms
+
+    if (mcfg.looptime) {
+        g_task_compute_imu = pifTaskManager_Add(TM_PERIOD_US, mcfg.looptime, taskComputeImu, NULL, TRUE);
+    }
+    else {
+        g_task_compute_imu = pifTaskManager_Add(TM_RATIO, 100, taskComputeImu, NULL, TRUE);	        // 100%
+    }
+    if (!g_task_compute_imu) return;
+    g_task_compute_imu->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
+
+    g_task_compute_rc = pifTaskManager_Add(TM_PERIOD_MS, 20, taskComputeRc, NULL, TRUE);	        // 20ms - 50Hz
+    if (!g_task_compute_rc) return;
+
+#ifdef MAG
+    if (sensors(SENSOR_MAG)) {
+        sensor_set.mag.p_m_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskMagGetAdc, NULL, TRUE);	// 100ms
+        if (!sensor_set.mag.p_m_task) return;
+        sensor_set.mag.p_m_task->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
+    }
+#endif
+
+#ifdef BARO
+    if (sensors(SENSOR_BARO)) {
+        sensor_set.baro.p_b_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskGetEstimatedAltitude, NULL, FALSE); // Use immediate
+        if (!sensor_set.baro.p_b_task) return;
+    }
+#endif
+
+#ifdef GPS
+    g_task_gps = pifTaskManager_Add(TM_PERIOD_MS, 100, taskGpsNewData, NULL, FALSE);                // Use immediate
+    if (!g_task_gps) return;
+#endif
+
+    if (!pifTaskManager_Add(TM_PERIOD_MS, 50, taskLedState, NULL, TRUE)) return;                	// 50ms
+
+	pifLog_Printf(LT_INFO, "Task=%d Timer1ms=%d\n", pifTaskManager_Count(),
+			pifTimerManager_Count(&g_timer_1ms));
+}
+
+// The loop function is called in an endless loop
+void loop()
+{
+	pifTaskManager_Loop();
+}
