@@ -215,7 +215,7 @@ static void mpu6050Init(sensorSet_t *p_sensor_set)
     PifMpu60x0GyroConfig gyro_config;
     PifMpu60x0AccelConfig accel_config;
 
-    pifMpu60x0_Init(&mpu.mpu60x0, PIF_ID_AUTO, &g_i2c_port, MPU60X0_I2C_ADDR_AD0_LOW, &imu_sensor);
+    pifMpu60x0_Init(&mpu.mpu60x0, PIF_ID_AUTO, &g_i2c_port, MPU60X0_I2C_ADDR(0), &imu_sensor);
 
     pifI2cDevice_WriteRegByte(mpu.mpu60x0._p_i2c, MPU60X0_REG_SMPLRT_DIV, 0x00); // Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
 
@@ -272,7 +272,7 @@ static void mpu6500Init(sensorSet_t *p_sensor_set)
     PifMpu6500Config config;
     PifMpu6500AccelConfig accel_config;
 
-    pifMpu6500_Init(&mpu.mpu6500, PIF_ID_AUTO, &g_i2c_port, MPU6500_I2C_ADDR_AD0_LOW, &imu_sensor);
+    pifMpu6500_Init(&mpu.mpu6500, PIF_ID_AUTO, &g_i2c_port, MPU6500_I2C_ADDR(0), &imu_sensor);
 
     // Device reset
     pifI2cDevice_WriteRegByte(mpu.mpu6500._p_i2c, MPU6500_REG_PWR_MGMT_1, 0x80); // Device reset
@@ -288,7 +288,7 @@ static void mpu6500Init(sensorSet_t *p_sensor_set)
     pif_Delay1ms(10);
 
     gyro_config.byte = 0;
-    gyro_config.bit.fs_sel = MPU6500_FS_SEL_2000DPS;
+    gyro_config.bit.gyro_fs_sel = MPU6500_GYRO_FS_SEL_2000DPS;
     pifMpu6500_SetGyroConfig(&mpu.mpu6500, gyro_config);
 
     config.byte = 0;
@@ -313,7 +313,7 @@ static void mpu6500Init(sensorSet_t *p_sensor_set)
 
     // Accel config
     accel_config.byte = 0;
-    accel_config.bit.accel_fs_sel = MPU6500_AFS_SEL_8G;
+    accel_config.bit.accel_fs_sel = MPU6500_ACCEL_FS_SEL_8G;
     pifMpu6500_SetAccelConfig(&mpu.mpu6500, accel_config);
 
     // Data ready interrupt configuration
