@@ -79,6 +79,7 @@ extern "C" {
 void setup()
 {
     uint8_t i;
+    int line;
     drv_pwm_config_t pwm_params;
     drv_adc_config_t adc_params;
     bool sensorsOK = false;
@@ -107,37 +108,37 @@ void setup()
 
     pif_Init(micros);
 
-    if (!pifTaskManager_Init(20)) return;
+    if (!pifTaskManager_Init(20)) { line = __LINE__; goto fail; }
 
 #ifndef __PIF_NO_LOG__
     pifLog_Init();
 #endif
 
-    if (!pifTimerManager_Init(&g_timer_1ms, PIF_ID_AUTO, 1000, 3)) return;		        	// 1000us
+    if (!pifTimerManager_Init(&g_timer_1ms, PIF_ID_AUTO, 1000, 3)) { line = __LINE__; goto fail; }		        // 1000us
 
 #ifndef __PIF_NO_LOG__
-	if (!pifComm_Init(&s_comm_log, PIF_ID_AUTO)) return;
-    if (!pifComm_AttachTask(&s_comm_log, TM_PERIOD_MS, 1, TRUE)) return;					// 1ms
+	if (!pifComm_Init(&s_comm_log, PIF_ID_AUTO)) { line = __LINE__; goto fail; }
+    if (!pifComm_AttachTask(&s_comm_log, TM_PERIOD_MS, 1, TRUE)) { line = __LINE__; goto fail; }				// 1ms
     s_comm_log.act_send_data = actLogSendData;
 
-	if (!pifLog_AttachComm(&s_comm_log)) return;
+	if (!pifLog_AttachComm(&s_comm_log)) { line = __LINE__; goto fail; }
 #endif
 
 	pifLog_Print(LT_INFO, "Start Baseflight\n");
 
-    if (!buzzerInit()) return;
+    if (!buzzerInit()) { line = __LINE__; goto fail; }
 
     // make sure (at compile time) that config struct doesn't overflow allocated flash pages
     ct_assert(sizeof(mcfg) < STORAGE_VOLUME);
 
     g_featureDefault = featureDefault;
 
-    if (!pifI2cPort_Init(&g_i2c_port, PIF_ID_AUTO, 5, I2C_TRANSFER_SIZE)) return;
+    if (!pifI2cPort_Init(&g_i2c_port, PIF_ID_AUTO, 5, I2C_TRANSFER_SIZE)) { line = __LINE__; goto fail; }
     g_i2c_port.act_read = actI2cRead;
     g_i2c_port.act_write = actI2cWrite;
 
-    if (!initEEPROM()) return;
-    if (!checkFirstTime(false)) return;
+    if (!initEEPROM()) { line = __LINE__; goto fail; }
+    if (!checkFirstTime(false)) { line = __LINE__; goto fail; }
     readEEPROM();
 
     systemInit();
@@ -266,7 +267,6 @@ void setup()
 
     core.numAuxChannels = constrain((mcfg.rc_channel_count - 4), 4, 8);
 
-
 #ifdef TELEMETRY
     if (feature(FEATURE_TELEMETRY))
         initTelemetry();
@@ -279,24 +279,24 @@ void setup()
     calibratingB = CALIBRATING_BARO_CYCLES;             // 10 seconds init_delay + 200 * 25 ms = 15 seconds before ground pressure settles
     f.SMALL_ANGLE = 1;
 
-    if (!pifTaskManager_Add(TM_PERIOD_MS, 1, taskLoop, NULL, TRUE)) return;                   	    // 1ms
+    if (!pifTaskManager_Add(TM_PERIOD_MS, 10, taskLoop, NULL, TRUE)) { line = __LINE__; goto fail; }				// 1ms
 
     if (mcfg.looptime) {
         g_task_compute_imu = pifTaskManager_Add(TM_PERIOD_US, mcfg.looptime, taskComputeImu, NULL, TRUE);
     }
     else {
-        g_task_compute_imu = pifTaskManager_Add(TM_RATIO, 100, taskComputeImu, NULL, TRUE);	        // 100%
+        g_task_compute_imu = pifTaskManager_Add(TM_RATIO, 100, taskComputeImu, NULL, TRUE);	        			// 100%
     }
-    if (!g_task_compute_imu) return;
+    if (!g_task_compute_imu) { line = __LINE__; goto fail; }
     g_task_compute_imu->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
 
-    g_task_compute_rc = pifTaskManager_Add(TM_PERIOD_MS, 20, taskComputeRc, NULL, TRUE);	        // 20ms - 50Hz
-    if (!g_task_compute_rc) return;
+    g_task_compute_rc = pifTaskManager_Add(TM_PERIOD_MS, 20, taskComputeRc, NULL, TRUE);	        			// 20ms - 50Hz
+    if (!g_task_compute_rc) { line = __LINE__; goto fail; }
 
 #ifdef MAG
     if (sensors(SENSOR_MAG)) {
-        sensor_set.mag.p_m_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskMagGetAdc, NULL, TRUE);	// 100ms
-        if (!sensor_set.mag.p_m_task) return;
+        sensor_set.mag.p_m_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskMagGetAdc, NULL, TRUE);				// 100ms
+        if (!sensor_set.mag.p_m_task) { line = __LINE__; goto fail; }
         sensor_set.mag.p_m_task->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
     }
 #endif
@@ -304,19 +304,24 @@ void setup()
 #ifdef BARO
     if (sensors(SENSOR_BARO)) {
         sensor_set.baro.p_b_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskGetEstimatedAltitude, NULL, FALSE); // Use immediate
-        if (!sensor_set.baro.p_b_task) return;
+        if (!sensor_set.baro.p_b_task) { line = __LINE__; goto fail; }
     }
 #endif
 
 #ifdef GPS
-    g_task_gps = pifTaskManager_Add(TM_PERIOD_MS, 100, taskGpsNewData, NULL, FALSE);                // Use immediate
-    if (!g_task_gps) return;
+    g_task_gps = pifTaskManager_Add(TM_PERIOD_MS, 100, taskGpsNewData, NULL, FALSE);                			// Use immediate
+    if (!g_task_gps) { line = __LINE__; goto fail; }
 #endif
 
-    if (!pifTaskManager_Add(TM_PERIOD_MS, 50, taskLedState, NULL, TRUE)) return;                	// 50ms
+    if (!pifTaskManager_Add(TM_PERIOD_MS, 50, taskLedState, NULL, TRUE)) { line = __LINE__; goto fail; }       	// 50ms
 
 	pifLog_Printf(LT_INFO, "Task=%d Timer1ms=%d\n", pifTaskManager_Count(),
 			pifTimerManager_Count(&g_timer_1ms));
+	return;
+
+fail:
+	pifLog_Printf(LT_ERROR, "Error=%Xh Line=%u", pif_error, line);
+	pifLog_SendAndExit();
 }
 
 // The loop function is called in an endless loop

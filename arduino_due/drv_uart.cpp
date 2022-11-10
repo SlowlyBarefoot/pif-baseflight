@@ -19,12 +19,13 @@ typedef struct {
 static uartPort_t uartPort[3];
 
 
-static void actSerial1SetBaudRate(PifComm* p_comm, uint32_t baudrate)
+static BOOL actSerial1SetBaudRate(PifComm* p_comm, uint32_t baudrate)
 {
 	Serial1.end();
 	Serial1.begin(baudrate);
 
 	pifTask_ChangePeriod(p_comm->_p_task, 115200 / baudrate);
+	return TRUE;
 }
 
 static uint16_t actSerial1SendData(PifComm* p_comm, uint8_t* p_buffer, uint16_t size)
@@ -66,12 +67,13 @@ static uartPort_t *serialUSART1(portMode_t mode)
     return s;
 }
 
-static void actSerial2SetBaudRate(PifComm* p_comm, uint32_t baudrate)
+static BOOL actSerial2SetBaudRate(PifComm* p_comm, uint32_t baudrate)
 {
 	Serial2.end();
 	Serial2.begin(baudrate);
 
 	pifTask_ChangePeriod(p_comm->_p_task, 115200 / baudrate);
+	return TRUE;
 }
 
 static uint16_t actSerial2SendData(PifComm* p_comm, uint8_t* p_buffer, uint16_t size)
@@ -114,12 +116,13 @@ static uartPort_t *serialUSART2(portMode_t mode)
 }
 
 
-static void actSerial3SetBaudRate(PifComm* p_comm, uint32_t baudrate)
+static BOOL actSerial3SetBaudRate(PifComm* p_comm, uint32_t baudrate)
 {
 	Serial3.end();
 	Serial3.begin(baudrate);
 
 	pifTask_ChangePeriod(p_comm->_p_task, 115200 / baudrate);
+	return TRUE;
 }
 
 static uint16_t actSerial3SendData(PifComm* p_comm, uint8_t* p_buffer, uint16_t size)
@@ -209,8 +212,8 @@ serialPort_t *uartOpen(int num, uint32_t baudRate, portMode_t mode)
     return &s->port;
 }
 
-void serialSetBaudRate(serialPort_t *port, uint32_t baudRate)
+BOOL serialSetBaudRate(serialPort_t *port, uint32_t baudRate)
 {
-   	(*port->comm.act_set_baudrate)(&port->comm, baudRate);
+   	return (*port->comm.act_set_baudrate)(&port->comm, baudRate);
 }
 

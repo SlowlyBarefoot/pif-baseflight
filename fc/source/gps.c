@@ -84,10 +84,10 @@ const uint8_t kCfgNav5[] = {
 
 const uint8_t kCfgSbas[][8] = {
         { 0x03, 0x07, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00 },   	// Auto
-        { 0x03, 0x07, 0x03, 0x00, 0x4A, 0x00, 0x01, 0x40 },   	// EGNOS
-        { 0x03, 0x07, 0x03, 0x00, 0x00, 0xA8, 0x04, 0x00 },   	// WAAS
-        { 0x03, 0x07, 0x03, 0x00, 0x00, 0x42, 0x0A, 0x00 },   	// MSAS + KASS
-        { 0x03, 0x07, 0x03, 0x00, 0x80, 0x11, 0x00, 0x00 },   	// GAGAN
+        { 0x03, 0x07, 0x03, 0x00, 0x51, 0x08, 0x00, 0x00 },   	// EGNOS
+        { 0x03, 0x07, 0x03, 0x00, 0x04, 0xE0, 0x04, 0x00 },   	// WAAS
+        { 0x03, 0x07, 0x03, 0x00, 0x00, 0x02, 0x02, 0x00 },   	// MSAS + KASS
+        { 0x03, 0x07, 0x03, 0x00, 0x80, 0x01, 0x00, 0x00 },   	// GAGAN
         { 0x02, 0x07, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00 }		// Disabled
 };
 
@@ -119,11 +119,13 @@ typedef struct gpsData_t {
     int step;
     int state_position;             // incremental variable for loops
     uint32_t state_ts;              // timestamp for last state_position increment
+    BOOL receive;
 } gpsData_t;
 
 static gpsData_t gpsData;
 static PifGpsNmea gps_nmea;
 static PifGpsUblox gps_ublox;
+
 
 static void gpsSetState(uint8_t state)
 {
@@ -131,6 +133,7 @@ static void gpsSetState(uint8_t state)
     gpsData.state_position = 0;
     gpsData.state_ts = pif_cumulative_timer1ms;
     gpsData.step = 0;
+    gpsData.receive = FALSE;
 }
 
 static void _evtGpsReceive(PifGps *p_owner)
@@ -156,6 +159,7 @@ static void _evtGpsReceive(PifGps *p_owner)
     GPS_VerticalAcc = p_owner->_vertical_acc;
 
     g_task_gps->immediate = TRUE;
+    gpsData.receive = TRUE;
 }
 
 static void _evtGpsTimeout(PifGps *p_owner)
@@ -172,35 +176,34 @@ static void _evtGpsTimeout(PifGps *p_owner)
 
 void gpsInit(uint8_t port, uint8_t baudrateIndex)
 {
-    portMode_t mode = MODE_RXTX;
-
     // init gpsData structure. if we're not actually enabled, don't bother doing anything else
     gpsSetState(GPS_UNKNOWN);
 
     gpsData.baudrateIndex = baudrateIndex;
     gpsData.lastMessage = pif_cumulative_timer1ms;
     gpsData.errors = 0;
-    // only RX is needed for NMEA-style GPS
-    if (mcfg.gps_type == GPS_NMEA)
-        mode = MODE_RX;
 
     gpsSetPIDs();
     // Open GPS UART, no callback - buffer will be read out in gpsThread()
-    core.gpsport = uartOpen(port, gpsInitData[baudrateIndex].baudrate, mode);    // signal GPS "thread" to initialize when it gets to it
-    if (mcfg.gps_type == GPS_NMEA) {
+    core.gpsport = uartOpen(port, gpsInitData[baudrateIndex].baudrate, MODE_RXTX);    // signal GPS "thread" to initialize when it gets to it
+    if (mcfg.gps_type == GPS_NMEA && gpsInitData[baudrateIndex].baudrate == 9600) {
         if (!pifGpsNmea_Init(&gps_nmea, PIF_ID_AUTO)) return;
         gps_nmea._gps.evt_nmea_msg_id = PIF_GPS_NMEA_MSG_ID_GGA;
         pifGpsNmea_AttachComm(&gps_nmea, &core.gpsport->comm);
         gps_nmea._gps.evt_receive = _evtGpsReceive;
         pifGps_SetTimeout(&gps_nmea._gps, &g_timer_1ms, GPS_TIMEOUT, _evtGpsTimeout);
+
+		// signal GPS "thread" to initialize when it gets to it
+		gpsSetState(GPS_CONFIGURATION);
     }
     else {
         if (!pifGpsUblox_Init(&gps_ublox, PIF_ID_AUTO)) return;
         pifGpsUblox_AttachComm(&gps_ublox, &core.gpsport->comm);
         gps_ublox._gps.evt_receive = _evtGpsReceive;
+
+		// signal GPS "thread" to initialize when it gets to it
+		gpsSetState(GPS_INITIALIZING);
     }
-    // signal GPS "thread" to initialize when it gets to it
-    gpsSetState(GPS_INITIALIZING);
 
     // copy ubx sbas config string to use
     if (mcfg.gps_ubx_sbas >= SBAS_LAST)
@@ -209,20 +212,95 @@ void gpsInit(uint8_t port, uint8_t baudrateIndex)
 
 static void gpsInitNmea(void)
 {
-    // nothing to do, just set baud rate and try receiving some stuff and see if it parses
-    serialSetBaudRate(core.gpsport, gpsInitData[gpsData.baudrateIndex].baudrate);
-    gpsSetState(GPS_RECEIVINGDATA);
+    if (gpsInitData[gpsData.baudrateIndex].baudrate == 9600) {
+        // nothing to do, just set baud rate and try receiving some stuff and see if it parses
+        serialSetBaudRate(core.gpsport, gpsInitData[gpsData.baudrateIndex].baudrate);
+        gpsSetState(GPS_RECEIVINGDATA);
+    }
+    else {
+        gps_ublox._gps.evt_nmea_msg_id = PIF_GPS_NMEA_MSG_ID_GGA;
+        gpsSetState(GPS_RECEIVINGDATA);
+        pifGps_SetTimeout(&gps_ublox._gps, &g_timer_1ms, GPS_TIMEOUT, _evtGpsTimeout);
+    }
 }
 
 static void gpsInitUblox(void)
 {
-    uint32_t m;
+    static uint32_t timestamp;
     uint8_t i;
     BOOL rtn;
 
-    // UBX will run at mcfg.gps_baudrate, it shouldn't be "autodetected". So here we force it to that rate
+	// GPS_CONFIGURATION, push some ublox config strings
+	if (gpsData.step < 10) {
+		rtn = pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_MSG, sizeof(kCfgMsg[gpsData.step]), (uint8_t*)kCfgMsg[gpsData.step], FALSE);
+		if (rtn) {
+			gpsData.step++;
+		}
+	}
+	else if (gpsData.step == 10) {
+		rtn = pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_RATE, sizeof(kCfgRate), (uint8_t*)kCfgRate, FALSE);
+		if (rtn) {
+			gpsData.step++;
+		}
+	}
+	else if (gpsData.step == 11) {
+		rtn = pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_NAV5, sizeof(kCfgNav5), (uint8_t*)kCfgNav5, FALSE);
+		if (rtn) {
+			gpsData.step++;
+		}
+	}
+	else if (gpsData.step == 12) {
+		i = mcfg.gps_ubx_sbas > SBAS_DISABLED ? mcfg.gps_ubx_sbas : SBAS_LAST;
+		rtn = pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_SBAS, sizeof(kCfgSbas[i]), (uint8_t*)kCfgSbas[i], FALSE);
+		if (rtn) {
+			gpsData.step++;
+			timestamp = pif_cumulative_timer1ms;
+		}
+	}
+	else if (gpsData.step == 13) {
+		if (pif_cumulative_timer1ms - timestamp < 10000) {
+			if (gpsData.receive) {
+				// ublox should be init'd, time to try receiving some junk
+				gpsSetState(GPS_RECEIVINGDATA);
+				pifGps_SetTimeout(&gps_ublox._gps, &g_timer_1ms, GPS_TIMEOUT, _evtGpsTimeout);
+			}
+		}
+		else {
+			_evtGpsTimeout(&gps_ublox._gps);
+		}
+	}
+}
+
+static void gpsInitHardware(void)
+{
+    switch (mcfg.gps_type) {
+        case GPS_NMEA:
+            gpsInitNmea();
+            break;
+
+        case GPS_UBLOX:
+            gpsInitUblox();
+            break;
+
+        case GPS_MTK_NMEA:
+        case GPS_MTK_BINARY:
+            // TODO. need to find my old piece of shit MTK GPS.
+            break;
+    }
+
+    // clear error counter
+    gpsData.errors = 0;
+}
+
+void gpsThread(void)
+{
+    uint32_t m;
+    BOOL rtn;
 
     switch (gpsData.state) {
+        case GPS_UNKNOWN:
+            break;
+
         case GPS_INITIALIZING:
             m = pif_cumulative_timer1ms;
             if (m - gpsData.state_ts < (gpsData.step ? GPS_BAUD_DELAY : 3000))
@@ -255,71 +333,6 @@ static void gpsInitUblox(void)
             gpsSetState(GPS_CONFIGURATION);
             break;
 
-        case GPS_CONFIGURATION:
-            // GPS_CONFIGURATION, push some ublox config strings
-            if (gpsData.step < 10) {
-                rtn = pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_MSG, sizeof(kCfgMsg[gpsData.step]), (uint8_t*)kCfgMsg[gpsData.step], FALSE);
-                if (rtn) {
-                    gpsData.step++;
-                }
-            }
-            else if (gpsData.step == 10) {
-                rtn = pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_RATE, sizeof(kCfgRate), (uint8_t*)kCfgRate, FALSE);
-                if (rtn) {
-                    gpsData.step++;
-                }
-            }
-            else if (gpsData.step == 11) {
-                rtn = pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_NAV5, sizeof(kCfgNav5), (uint8_t*)kCfgNav5, FALSE);
-                if (rtn) {
-                    gpsData.step++;
-                }
-            }
-            else if (gpsData.step == 12) {
-                i = mcfg.gps_ubx_sbas > SBAS_DISABLED ? mcfg.gps_ubx_sbas : SBAS_LAST;
-                rtn = pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_SBAS, sizeof(kCfgSbas[i]), (uint8_t*)kCfgSbas[i], FALSE);
-                if (rtn) {
-                    gpsData.step++;
-                }
-            }
-            else {
-                // ublox should be init'd, time to try receiving some junk
-                gpsSetState(GPS_RECEIVINGDATA);
-                pifGps_SetTimeout(&gps_ublox._gps, &g_timer_1ms, GPS_TIMEOUT, _evtGpsTimeout);
-            }
-            break;
-    }
-}
-
-static void gpsInitHardware(void)
-{
-    switch (mcfg.gps_type) {
-        case GPS_NMEA:
-            gpsInitNmea();
-            break;
-
-        case GPS_UBLOX:
-            gpsInitUblox();
-            break;
-
-        case GPS_MTK_NMEA:
-        case GPS_MTK_BINARY:
-            // TODO. need to find my old piece of shit MTK GPS.
-            break;
-    }
-
-    // clear error counter
-    gpsData.errors = 0;
-}
-
-void gpsThread(void)
-{
-    switch (gpsData.state) {
-        case GPS_UNKNOWN:
-            break;
-
-        case GPS_INITIALIZING:
-        case GPS_SETBAUD:
         case GPS_CONFIGURATION:
             gpsInitHardware();
             break;
@@ -712,6 +725,7 @@ static void _EvtPrintFrame(char* p_frame)
 int8_t gpsSetPassthrough(void)
 {
     static bool state = false;
+	PifGps* p_gps;
 
     if (gpsData.state != GPS_RECEIVINGDATA)
         return -1;
@@ -720,13 +734,14 @@ int8_t gpsSetPassthrough(void)
     actLed1State(OFF);
 
     if (mcfg.gps_type == GPS_NMEA) {
+		p_gps = (gpsInitData[gpsData.baudrateIndex].baudrate == 9600) ? &gps_nmea._gps : &gps_ublox._gps;
         if (state) {
-            gps_nmea._gps.evt_frame = NULL;
+            p_gps->evt_frame = NULL;
             state = false;
             return 0;
         }
         else {
-            gps_nmea._gps.evt_frame = _EvtPrintFrame;
+            p_gps->evt_frame = _EvtPrintFrame;
             state = true;
             return 1;
         }
@@ -980,8 +995,9 @@ static int32_t wrap_36000(int32_t deg)
 
 #else
 
-void gpsInit(uint8_t baudrateIndex)
+void gpsInit(uint8_t port, uint8_t baudrateIndex)
 {
+	(void)port;
 	(void)baudrateIndex;
 }
 

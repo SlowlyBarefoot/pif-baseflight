@@ -889,34 +889,28 @@ uint16_t taskComputeRc(PifTask *p_task)	// 50Hz
 
 uint16_t taskLoop(PifTask *p_task)
 {
-    bool rcReady = false;
+	static int taskOrder = 0;   // never call all function in the same loop, to avoid high delay spikes
 
-    (void)p_task;
+	(void)p_task;
 
-    if (rcReady) { // 50Hz or data driven
-        rcReady = false;
-        g_task_compute_rc->immediate = TRUE;
-    } else {                        // not in rc loop
-        static int taskOrder = 0;   // never call all function in the same loop, to avoid high delay spikes
-        switch (taskOrder) {
-            case 0:
-                // if GPS feature is enabled, gpsThread() will be called at some intervals to check for stuck
-                // hardware, wrong baud rates, init GPS if needed, etc. Don't use SENSOR_GPS here as gpsThread() can and will
-                // change this based on available hardware
-                taskOrder++;
+	switch (taskOrder) {
+		case 0:
+			// if GPS feature is enabled, gpsThread() will be called at some intervals to check for stuck
+			// hardware, wrong baud rates, init GPS if needed, etc. Don't use SENSOR_GPS here as gpsThread() can and will
+			// change this based on available hardware
+			taskOrder++;
 #ifdef GPS
-                if (feature(FEATURE_GPS)) {
-                    gpsThread();
-                    break;
-                }
+			if (feature(FEATURE_GPS)) {
+				gpsThread();
+				break;
+			}
 #endif
-            case 1:
-                taskOrder = 0;
-                if (feature(FEATURE_VARIO) && f.VARIO_MODE)
-                    mwVario();
-                break;
-        }
-    }
+		case 1:
+			taskOrder = 0;
+			if (feature(FEATURE_VARIO) && f.VARIO_MODE)
+				mwVario();
+			break;
+	}
     return 0;
 }
 

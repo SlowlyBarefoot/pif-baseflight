@@ -235,7 +235,7 @@ static void pwmWriteBrushed(uint8_t index, uint16_t value)
 
 static void pwmWriteStandard(uint8_t index, uint16_t value)
 {
-	analogWrite(motors[index]->port, 2 * value);
+	analogWrite(motors[index]->port, value * 4096L / 2500L);
 }
 
 bool pwmInit(drv_pwm_config_t *init)

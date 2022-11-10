@@ -8,12 +8,13 @@
 
 #include "drv_system.h"
 
+#include "core/pif_log.h"
 #include "storage/pif_storage_var.h"
 
 #include <DueFlashStorage.h>
 
 
-#define LED0_PIN    13
+#define LED0_PIN    30
 #define LED1_PIN    31
 #define BEEP_PIN    32
 #define INV_PIN     33
@@ -40,8 +41,10 @@ void systemInit(void)
 
 void failureMode(uint8_t mode)
 {
+	pifLog_Print(LT_ERROR, "Failure mode");
     actLed1State(OFF);
     actLed0State(ON);
+    pifLog_SendAndExit();
     while (1) {
         actLed1Toggle();
         actLed0Toggle();
