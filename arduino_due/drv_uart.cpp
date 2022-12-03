@@ -8,6 +8,8 @@
 #include "board.h"
 #include "mw.h"
 
+#include "core/pif_log.h"
+
 
 // FIXME this is a uart_t really.  Move the generic properties into a separate structure (serialPort_t) and update the code to use it
 typedef struct {
@@ -16,6 +18,9 @@ typedef struct {
 } uartPort_t;
 
 
+#ifdef __PIF_DEBUG__
+	static PifComm s_comm_log;
+#endif
 static uartPort_t uartPort[3];
 
 
@@ -164,12 +169,35 @@ static uartPort_t *serialUSART3(portMode_t mode)
     return s;
 }
 
+#ifdef __PIF_DEBUG__
+
+static uint16_t actLogSendData(PifComm* p_comm, uint8_t* p_buffer, uint16_t size)
+{
+	(void)p_comm;
+
+    return Serial.write((char *)p_buffer, size);
+}
+
+BOOL logOpen()
+{
+    pifLog_Init();
+
+	if (!pifComm_Init(&s_comm_log, PIF_ID_AUTO)) return FALSE;
+    if (!pifComm_AttachTask(&s_comm_log, TM_PERIOD_MS, 1, TRUE)) return FALSE;				// 1ms
+    s_comm_log.act_send_data = actLogSendData;
+
+	if (!pifLog_AttachComm(&s_comm_log)) return FALSE;
+	return TRUE;
+}
+
+#endif
+
 serialPort_t *uartOpen(int num, uint32_t baudRate, portMode_t mode)
 {
     uartPort_t *s = NULL;
 
     switch (num) {
-    case 1:
+    case UART_PORT_1:
     	if (mode & MODE_SBUS) {
     		Serial1.begin(baudRate, (UARTClass::UARTModes)(US_MR_CHRL_8_BIT | US_MR_NBSTOP_2_BIT | UART_MR_PAR_EVEN));
     	}
@@ -179,7 +207,7 @@ serialPort_t *uartOpen(int num, uint32_t baudRate, portMode_t mode)
         s = serialUSART1(mode);
         break;
 
-    case 2:
+    case UART_PORT_2:
     	if (mode & MODE_SBUS) {
     		Serial2.begin(baudRate, (UARTClass::UARTModes)(US_MR_CHRL_8_BIT | US_MR_NBSTOP_2_BIT | UART_MR_PAR_EVEN));
     	}
@@ -189,7 +217,7 @@ serialPort_t *uartOpen(int num, uint32_t baudRate, portMode_t mode)
         s = serialUSART2(mode);
         break;
 
-    case 3:
+    case UART_PORT_3:
     	if (mode & MODE_SBUS) {
     		Serial3.begin(baudRate, (UARTClass::UARTModes)(US_MR_CHRL_8_BIT | US_MR_NBSTOP_2_BIT | UART_MR_PAR_EVEN));
     	}
@@ -212,8 +240,8 @@ serialPort_t *uartOpen(int num, uint32_t baudRate, portMode_t mode)
     return &s->port;
 }
 
-BOOL serialSetBaudRate(serialPort_t *port, uint32_t baudRate)
+BOOL serialSetBaudRate(serialPort_t *instance, uint32_t baudRate)
 {
-   	return (*port->comm.act_set_baudrate)(&port->comm, baudRate);
+   	return (*instance->comm.act_set_baudrate)(&instance->comm, baudRate);
 }
 

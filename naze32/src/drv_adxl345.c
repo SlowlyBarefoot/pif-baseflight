@@ -41,7 +41,7 @@
 extern uint16_t acc_1G;
 
 static BOOL adxl345Init(PifImuSensorAlign align);
-static void adxl345Read(int16_t *accelData);
+static BOOL adxl345Read(int16_t *accelData);
 
 static bool useFifo = false;
 static PifImuSensorAlign accAlign = IMUS_ALIGN_CW270_DEG;
@@ -93,7 +93,7 @@ static BOOL adxl345Init(PifImuSensorAlign align)
 
 uint8_t acc_samples = 0;
 
-static void adxl345Read(int16_t *accelData)
+static BOOL adxl345Read(int16_t *accelData)
 {
     uint8_t buf[8];
     int16_t data[3];
@@ -125,4 +125,5 @@ static void adxl345Read(int16_t *accelData)
     }
 
     alignSensors(data, accelData, accAlign);
+    return TRUE;
 }

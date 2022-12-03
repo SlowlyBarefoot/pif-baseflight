@@ -104,10 +104,17 @@ enum {
 enum {
     GPS_UNKNOWN,
     GPS_INITIALIZING,
+	GPS_SENDBAUD,
     GPS_SETBAUD,
     GPS_CONFIGURATION,
     GPS_RECEIVINGDATA,
     GPS_LOSTCOMMS,
+};
+
+enum {
+	GUCR_NONE,
+	GUCR_ACK,
+	GUCR_NAK
 };
 
 typedef struct gpsData_t {
@@ -120,6 +127,7 @@ typedef struct gpsData_t {
     int state_position;             // incremental variable for loops
     uint32_t state_ts;              // timestamp for last state_position increment
     BOOL receive;
+    int cfg_result;
 } gpsData_t;
 
 static gpsData_t gpsData;
@@ -134,6 +142,13 @@ static void gpsSetState(uint8_t state)
     gpsData.state_ts = pif_cumulative_timer1ms;
     gpsData.step = 0;
     gpsData.receive = FALSE;
+}
+
+static void _evtGpsUbloxCfgResult(PifGpsUblox* p_owner, BOOL result)
+{
+	(void)p_owner;
+
+	gpsData.cfg_result = result ? GUCR_ACK : GUCR_NAK;
 }
 
 static void _evtGpsReceive(PifGps *p_owner)
@@ -167,6 +182,9 @@ static void _evtGpsTimeout(PifGps *p_owner)
     (void)p_owner;
 
     // remove GPS from capability
+    if (mcfg.gps_type != GPS_NMEA || gpsInitData[gpsData.baudrateIndex].baudrate != 9600) {
+        serialStopReceiveFunc(&core.gpsport->comm);
+    }
     sensorsClear(SENSOR_GPS);
     gpsSetState(GPS_LOSTCOMMS);
 #ifndef __PIF_NO_LOG__
@@ -185,13 +203,14 @@ void gpsInit(uint8_t port, uint8_t baudrateIndex)
 
     gpsSetPIDs();
     // Open GPS UART, no callback - buffer will be read out in gpsThread()
-    core.gpsport = uartOpen(port, gpsInitData[baudrateIndex].baudrate, MODE_RXTX);    // signal GPS "thread" to initialize when it gets to it
+    core.gpsport = uartOpen(port, 9600, MODE_RXTX);    // signal GPS "thread" to initialize when it gets to it
     if (mcfg.gps_type == GPS_NMEA && gpsInitData[baudrateIndex].baudrate == 9600) {
+    	serialStartReceiveFunc(&core.gpsport->comm);
+
         if (!pifGpsNmea_Init(&gps_nmea, PIF_ID_AUTO)) return;
         gps_nmea._gps.evt_nmea_msg_id = PIF_GPS_NMEA_MSG_ID_GGA;
         pifGpsNmea_AttachComm(&gps_nmea, &core.gpsport->comm);
         gps_nmea._gps.evt_receive = _evtGpsReceive;
-        pifGps_SetTimeout(&gps_nmea._gps, &g_timer_1ms, GPS_TIMEOUT, _evtGpsTimeout);
 
 		// signal GPS "thread" to initialize when it gets to it
 		gpsSetState(GPS_CONFIGURATION);
@@ -213,61 +232,112 @@ void gpsInit(uint8_t port, uint8_t baudrateIndex)
 static void gpsInitNmea(void)
 {
     if (gpsInitData[gpsData.baudrateIndex].baudrate == 9600) {
-        // nothing to do, just set baud rate and try receiving some stuff and see if it parses
-        serialSetBaudRate(core.gpsport, gpsInitData[gpsData.baudrateIndex].baudrate);
-        gpsSetState(GPS_RECEIVINGDATA);
+        pifGps_SetTimeout(&gps_nmea._gps, &g_timer_1ms, GPS_TIMEOUT, _evtGpsTimeout);
     }
     else {
         gps_ublox._gps.evt_nmea_msg_id = PIF_GPS_NMEA_MSG_ID_GGA;
-        gpsSetState(GPS_RECEIVINGDATA);
         pifGps_SetTimeout(&gps_ublox._gps, &g_timer_1ms, GPS_TIMEOUT, _evtGpsTimeout);
     }
+    gpsSetState(GPS_RECEIVINGDATA);
 }
 
 static void gpsInitUblox(void)
 {
-    static uint32_t timestamp;
+	static uint8_t cfg_msg_size = 0;
     uint8_t i;
-    BOOL rtn;
+    int line = 0;
 
 	// GPS_CONFIGURATION, push some ublox config strings
-	if (gpsData.step < 10) {
-		rtn = pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_MSG, sizeof(kCfgMsg[gpsData.step]), (uint8_t*)kCfgMsg[gpsData.step], FALSE);
-		if (rtn) {
-			gpsData.step++;
+	if (gpsData.step >= 20) {
+		if (gpsData.cfg_result == GUCR_ACK) {
+	  		gpsData.step = (gpsData.step - 20) + 1;
+			if (gpsData.step == cfg_msg_size) gpsData.step = 15;
+			gpsData.state_ts = pif_cumulative_timer1ms;
 		}
-	}
-	else if (gpsData.step == 10) {
-		rtn = pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_RATE, sizeof(kCfgRate), (uint8_t*)kCfgRate, FALSE);
-		if (rtn) {
-			gpsData.step++;
-		}
-	}
-	else if (gpsData.step == 11) {
-		rtn = pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_NAV5, sizeof(kCfgNav5), (uint8_t*)kCfgNav5, FALSE);
-		if (rtn) {
-			gpsData.step++;
-		}
-	}
-	else if (gpsData.step == 12) {
-		i = mcfg.gps_ubx_sbas > SBAS_DISABLED ? mcfg.gps_ubx_sbas : SBAS_LAST;
-		rtn = pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_SBAS, sizeof(kCfgSbas[i]), (uint8_t*)kCfgSbas[i], FALSE);
-		if (rtn) {
-			gpsData.step++;
-			timestamp = pif_cumulative_timer1ms;
-		}
-	}
-	else if (gpsData.step == 13) {
-		if (pif_cumulative_timer1ms - timestamp < 10000) {
-			if (gpsData.receive) {
-				// ublox should be init'd, time to try receiving some junk
-				gpsSetState(GPS_RECEIVINGDATA);
-				pifGps_SetTimeout(&gps_ublox._gps, &g_timer_1ms, GPS_TIMEOUT, _evtGpsTimeout);
-			}
+		else if (gpsData.cfg_result == GUCR_NAK) {
+			pif_error = E_RECEIVE_NACK;
+			line = __LINE__;
 		}
 		else {
-			_evtGpsTimeout(&gps_ublox._gps);
+			if (pif_cumulative_timer1ms - gpsData.state_ts >= 200) {
+				pif_error = E_TIMEOUT;
+				line = __LINE__;
+			}
 		}
+	}
+	else {
+		if (cfg_msg_size == 0) {
+			cfg_msg_size = sizeof(kCfgMsg) / sizeof(kCfgMsg[0]);
+			gps_ublox.evt_ubx_cfg_result = _evtGpsUbloxCfgResult;
+			gpsData.state_ts = pif_cumulative_timer1ms;
+		}
+		if (pif_cumulative_timer1ms - gpsData.state_ts < 5) return;
+		if (gpsData.step < cfg_msg_size) {
+			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_MSG, sizeof(kCfgMsg[gpsData.step]), (uint8_t*)kCfgMsg[gpsData.step], FALSE)) {
+                gpsData.cfg_result = GUCR_NONE;
+				gpsData.step += 20;
+				gpsData.state_ts = pif_cumulative_timer1ms;
+			}
+			else {
+				pif_error = E_TRANSFER_FAILED;
+				line = __LINE__;
+			}
+		}
+		else if (gpsData.step == 15) {
+			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_RATE, sizeof(kCfgRate), (uint8_t*)kCfgRate, FALSE)) {
+                gpsData.cfg_result = GUCR_NONE;
+				gpsData.step += 20;
+				gpsData.state_ts = pif_cumulative_timer1ms;
+			}
+			else {
+				pif_error = E_TRANSFER_FAILED;
+				line = __LINE__;
+			}
+		}
+		else if (gpsData.step == 16) {
+			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_NAV5, sizeof(kCfgNav5), (uint8_t*)kCfgNav5, FALSE)) {
+                gpsData.cfg_result = GUCR_NONE;
+				gpsData.step += 20;
+				gpsData.state_ts = pif_cumulative_timer1ms;
+			}
+			else {
+				pif_error = E_TRANSFER_FAILED;
+				line = __LINE__;
+			}
+		}
+		else if (gpsData.step == 17) {
+			i = mcfg.gps_ubx_sbas > SBAS_DISABLED ? mcfg.gps_ubx_sbas : SBAS_LAST;
+			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_SBAS, sizeof(kCfgSbas[i]), (uint8_t*)kCfgSbas[i], FALSE)) {
+                gpsData.cfg_result = GUCR_NONE;
+				gpsData.step += 20;
+				gpsData.state_ts = pif_cumulative_timer1ms;
+			}
+			else {
+				pif_error = E_TRANSFER_FAILED;
+				line = __LINE__;
+			}
+		}
+		else if (gpsData.step == 18) {
+			if (pif_cumulative_timer1ms - gpsData.state_ts < 10000) {
+				if (gpsData.receive) {
+					// ublox should be init'd, time to try receiving some junk
+					serialStartReceiveFunc(&core.gpsport->comm);
+					pifGps_SetTimeout(&gps_ublox._gps, &g_timer_1ms, GPS_TIMEOUT, _evtGpsTimeout);
+					gpsSetState(GPS_RECEIVINGDATA);
+				}
+			}
+			else {
+				pif_error = E_TIMEOUT;
+				line = __LINE__;
+			}
+		}
+	}
+
+	if (line) {
+#ifndef __PIF_NO_LOG__
+		pifLog_Printf(LT_ERROR, "GPS(%u) CS:%u S:%u E:%u", line, cfg_msg_size, gpsData.step, pif_error);
+#endif
+		_evtGpsTimeout(&gps_ublox._gps);
 	}
 }
 
@@ -295,7 +365,6 @@ static void gpsInitHardware(void)
 void gpsThread(void)
 {
     uint32_t m;
-    BOOL rtn;
 
     switch (gpsData.state) {
         case GPS_UNKNOWN:
@@ -303,25 +372,36 @@ void gpsThread(void)
 
         case GPS_INITIALIZING:
             m = pif_cumulative_timer1ms;
-            if (m - gpsData.state_ts < (gpsData.step ? GPS_BAUD_DELAY : 3000))
+            if (m - gpsData.state_ts < (gpsData.state_position ? GPS_BAUD_DELAY : 3000))
                 return;
 
             if (gpsData.state_position < GPS_INIT_ENTRIES) {
                 // try different speed to INIT
                 serialSetBaudRate(core.gpsport, gpsInitData[gpsData.state_position].baudrate);
-                // but print our FIXED init string for the baudrate we want to be at
-            	rtn = pifGpsUblox_SetPubxConfig(&gps_ublox, 1, 0x07, 0x03, gpsInitData[gpsData.baudrateIndex].baudrate, FALSE);
-                if (rtn) {
-                    gpsData.state_position++;
-                }
-            } 
-            else 
+                gpsData.state = GPS_SENDBAUD;
+                gpsData.state_ts = m;
+            }
+            else
             {
                 // we're now (hopefully) at the correct rate, next state will switch to it
                 gpsSetState(GPS_SETBAUD);
             }
-            gpsData.state_ts = m;
-            gpsData.step++;
+            break;
+
+        case GPS_SENDBAUD:
+            m = pif_cumulative_timer1ms;
+            if (m - gpsData.state_ts < 200)
+                return;
+
+            // but print our FIXED init string for the baudrate we want to be at
+            if (pifGpsUblox_SetPubxConfig(&gps_ublox, 1, 0x07, 0x03, gpsInitData[gpsData.baudrateIndex].baudrate, FALSE)) {
+                gpsData.state_position++;
+                gpsData.state = GPS_INITIALIZING;
+                gpsData.state_ts = m;
+            }
+            else {
+        		gpsSetState(GPS_INITIALIZING);
+            }
             break;
 
         case GPS_SETBAUD:
@@ -330,6 +410,7 @@ void gpsThread(void)
                 return;
 
             serialSetBaudRate(core.gpsport, gpsInitData[gpsData.baudrateIndex].baudrate);
+        	serialStartReceiveFunc(&core.gpsport->comm);
             gpsSetState(GPS_CONFIGURATION);
             break;
 
@@ -338,7 +419,12 @@ void gpsThread(void)
             break;
 
         case GPS_LOSTCOMMS:
-            pifGps_SetTimeout(&gps_ublox._gps, &g_timer_1ms, 0, NULL);
+            if (mcfg.gps_type == GPS_NMEA && gpsInitData[gpsData.baudrateIndex].baudrate == 9600) {
+                pifGps_SetTimeout(&gps_nmea._gps, &g_timer_1ms, 0, NULL);
+            }
+            else {
+                pifGps_SetTimeout(&gps_ublox._gps, &g_timer_1ms, 0, NULL);
+            }
             gpsData.errors++;
             // try another rate (Only if autobauding is enabled)
             if (mcfg.gps_autobaud) {

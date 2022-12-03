@@ -22,6 +22,8 @@ static PifImuSensorAlign magAlign = IMUS_ALIGN_CW180_DEG;
 
 static const char* hw_names = "AK8975";
 
+static BOOL ak8975Read(int16_t *magData);
+
 bool ak8975detect(sensorSet_t *p_sensor_set, void* p_param)
 {
     bool ack = false;
@@ -49,7 +51,7 @@ BOOL ak8975Init(PifImuSensorAlign align)
     return TRUE;
 }
 
-void ak8975Read(int16_t *magData)
+static BOOL ak8975Read(int16_t *magData)
 {
     uint8_t buf[6];
     int16_t mag[3];
@@ -66,4 +68,5 @@ void ak8975Read(int16_t *magData)
     alignSensors(mag, magData, magAlign);
 
     i2cWrite(AK8975_MAG_I2C_ADDRESS, AK8975_MAG_CONTROL_ADDRESS, 0x01); // start reading again
+    return TRUE;
 }

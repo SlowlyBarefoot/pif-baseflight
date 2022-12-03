@@ -255,6 +255,8 @@ void serialInit(uint8_t port, uint32_t baudrate, uint8_t flexport)
     ports[0].pif_msp.evt_other_packet = evtMspOtherPacket;
     pifMsp_AttachComm(&ports[0].pif_msp, &core.mainport->comm);
 
+    serialStartReceiveFunc(&core.mainport->comm);
+
     // additional telemetry port available only if spektrum sat isn't already assigned there
     if (flexport) {
         core.flexport = uartOpen(flexport, baudrate, MODE_RXTX);
@@ -264,6 +266,8 @@ void serialInit(uint8_t port, uint32_t baudrate, uint8_t flexport)
         ports[1].pif_msp.evt_receive = evtMspReceive;
         ports[1].pif_msp.evt_other_packet = evtMspOtherPacket;
         pifMsp_AttachComm(&ports[1].pif_msp, &core.flexport->comm);
+
+        serialStartReceiveFunc(&core.flexport->comm);
     }
 
     // calculate used boxes based on features and fill availableBoxes[] array

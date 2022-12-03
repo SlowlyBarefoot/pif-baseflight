@@ -15,9 +15,10 @@
 static uartPort_t uartPort[3];
 
 
-void actCommSetBaudRate(PifComm* p_comm, uint32_t baudrate)
+BOOL actCommSetBaudRate(PifComm* p_comm, uint32_t baudrate)
 {
-    uartSetBaudRate(&uartPort[PIF_ID_UART_2_IDX(p_comm->_id)].port, baudrate);
+    uartSetBaudRate(&uartPort[PIF_ID_UART_2_IDX(p_comm->_id)], baudrate);
+    return TRUE;
 }
 
 BOOL actUartStartTransfer(PifComm* p_comm)
@@ -37,7 +38,7 @@ uartPort_t *serialUSART1(portMode_t mode)
 
     if (!pifComm_Init(&s->port.comm, PIF_ID_UART(0))) return NULL;
     if (mode & MODE_RX) {
-        if (!pifComm_AllocRxBuffer(&s->port.comm, 16)) return NULL;
+        if (!pifComm_AllocRxBuffer(&s->port.comm, 16, 25)) return NULL;
     }
     if (mode & MODE_TX) {
         if (!pifComm_AllocTxBuffer(&s->port.comm, 16)) return NULL;
@@ -79,15 +80,13 @@ uartPort_t *serialUSART2(portMode_t mode)
 
     if (!pifComm_Init(&s->port.comm, PIF_ID_UART(1))) return NULL;
     if (mode & MODE_RX) {
-        if (!pifComm_AllocRxBuffer(&s->port.comm, 16)) return NULL;
+        if (!pifComm_AllocRxBuffer(&s->port.comm, 16, 25)) return NULL;
     }
     if (mode & MODE_TX) {
         if (!pifComm_AllocTxBuffer(&s->port.comm, 16)) return NULL;
         s->port.comm.act_start_transfer = actUartStartTransfer;
     }
     s->port.comm.act_set_baudrate = actCommSetBaudRate;
-
-    s->USARTx = USART2;
 
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
     // USART2_TX    PA2
@@ -123,7 +122,7 @@ uartPort_t *serialUSART3(portMode_t mode)
 
     if (!pifComm_Init(&s->port.comm, PIF_ID_UART(2))) return NULL;
     if (mode & MODE_RX) {
-        if (!pifComm_AllocRxBuffer(&s->port.comm, 16)) return NULL;
+        if (!pifComm_AllocRxBuffer(&s->port.comm, 16, 10)) return NULL;
     }
     if (mode & MODE_TX) {
         if (!pifComm_AllocTxBuffer(&s->port.comm, 16)) return NULL;
@@ -157,21 +156,20 @@ uartPort_t *serialUSART3(portMode_t mode)
 serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode)
 {
     USART_InitTypeDef USART_InitStructure;
-
     uartPort_t *s = NULL;
 
     if (!port)
         return NULL;
 
-    if (port == 1) {
+    if (port == UART_PORT_1) {
         s = serialUSART1(mode);
         s->USARTx = USART1;
     }
-    else if (port == 2) {
+    else if (port == UART_PORT_2) {
         s = serialUSART2(mode);
         s->USARTx = USART2;
     }
-    else if (port == 3) {
+    else if (port == UART_PORT_3) {
         s = serialUSART3(mode);
         s->USARTx = USART3;
     }
@@ -179,7 +177,7 @@ serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode)
 
     s->port.p_param = NULL;
 
-    if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, 115200 / baudRate, TRUE)) return NULL;
+    if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, 1, TRUE)) return NULL;
 
     // callback for IRQ-based RX ONLY
     s->port.mode = mode;
@@ -215,10 +213,9 @@ serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode)
     return (serialPort_t *)s;
 }
 
-void uartSetBaudRate(serialPort_t *instance, uint32_t baudRate)
+void uartSetBaudRate(uartPort_t *instance, uint32_t baudRate)
 {
     USART_InitTypeDef USART_InitStructure;
-    uartPort_t *s = (uartPort_t *)instance;
 
     USART_InitStructure.USART_BaudRate = baudRate;
     USART_InitStructure.USART_WordLength = USART_WordLength_8b;
@@ -226,13 +223,11 @@ void uartSetBaudRate(serialPort_t *instance, uint32_t baudRate)
     USART_InitStructure.USART_Parity = USART_Parity_No;
     USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
     USART_InitStructure.USART_Mode = 0;
-    if (s->port.mode & MODE_RX)
+    if (instance->port.mode & MODE_RX)
         USART_InitStructure.USART_Mode |= USART_Mode_Rx;
-    if (s->port.mode & MODE_TX)
+    if (instance->port.mode & MODE_TX)
         USART_InitStructure.USART_Mode |= USART_Mode_Tx;
-    USART_Init(s->USARTx, &USART_InitStructure);
-
-    pifTask_ChangePeriod(s->port.comm._p_task, 115200 / baudRate);
+    USART_Init(instance->USARTx, &USART_InitStructure);
 }
 
 

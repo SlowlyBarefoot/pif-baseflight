@@ -253,10 +253,13 @@ static void ACC_Common(void)
     accADC[YAW] -= mcfg.accZero[YAW];
 }
 
-void ACC_getADC(void)
+BOOL ACC_getADC(void)
 {
-    sensor_set.acc.read(accADC);
-    ACC_Common();
+    if (sensor_set.acc.read(accADC)) {
+    	ACC_Common();
+    	return TRUE;
+    }
+	return FALSE;
 }
 
 #ifdef BARO
@@ -364,11 +367,14 @@ static void GYRO_Common(void)
         gyroADC[axis] -= gyroZero[axis];
 }
 
-void Gyro_getADC(void)
+BOOL Gyro_getADC(void)
 {
     // range: +/- 8192; +/- 2000 deg/sec
-    sensor_set.gyro.read(gyroADC);
-    GYRO_Common();
+    if (sensor_set.gyro.read(gyroADC)) {
+    	GYRO_Common();
+    	return TRUE;
+    }
+    return FALSE;
 }
 
 #ifdef MAG
@@ -397,7 +403,10 @@ uint16_t taskMagGetAdc(PifTask *p_task)
     (void)p_task;
 
     // Read mag sensor
-    sensor_set.mag.read(magADC);
+    if (!sensor_set.mag.read(magADC)) {
+    	p_task->immediate = TRUE;
+    	return 0;
+    }
 
     if (f.CALIBRATE_MAG) {
         tCal = (*pif_act_timer1us)();

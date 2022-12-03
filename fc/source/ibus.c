@@ -47,5 +47,7 @@ BOOL ibusInit(int uart, rcReadRawDataPtr *callback)
     if (callback)
         *callback = ibusReadRawRC;
 
+    serialStartReceiveFunc(&core.rcvrport->comm);
+
     return TRUE;
 }

@@ -204,7 +204,9 @@ BOOL I2C_Write(uint8_t addr, uint8_t* p_data, uint8_t size)
 
 PifI2cReturn actI2cWrite(uint8_t addr, uint32_t iaddr, uint8_t isize, uint8_t* p_data, uint16_t size)
 {
+#ifndef __PIF_NO_LOG__
 	uint8_t error;
+#endif
 #ifdef USE_I2C_WIRE
 	int i;
 	uint16_t n;
@@ -222,7 +224,9 @@ PifI2cReturn actI2cWrite(uint8_t addr, uint32_t iaddr, uint8_t isize, uint8_t* p
     if (error != 0) goto fail;
 #else
 	if (!I2C_WriteAddr(addr, iaddr, isize, p_data, size)) {
+#ifndef __PIF_NO_LOG__
 		error = pif_error;
+#endif
 		goto fail;
 	}
 #endif
@@ -237,7 +241,9 @@ fail:
 
 PifI2cReturn actI2cRead(uint8_t addr, uint32_t iaddr, uint8_t isize, uint8_t* p_data, uint16_t size)
 {
+#ifndef __PIF_NO_LOG__
 	uint8_t error;
+#endif
 #ifdef USE_I2C_WIRE
 	int i;
 	uint8_t count;
@@ -260,7 +266,9 @@ PifI2cReturn actI2cRead(uint8_t addr, uint32_t iaddr, uint8_t isize, uint8_t* p_
     }
 #else
 	if (!I2C_ReadAddr(addr, iaddr, isize, p_data, size)) {
+#ifndef __PIF_NO_LOG__
 		error = pif_error;
+#endif
 		goto fail;
 	}
 #endif

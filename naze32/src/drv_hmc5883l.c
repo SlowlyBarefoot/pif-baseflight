@@ -80,6 +80,8 @@ static PifHmc5883 hmc5883;
 
 static const char* hw_names = "HMC5883L";
 
+static BOOL hmc5883lRead(int16_t *magData);
+
 bool hmc5883lDetect(sensorSet_t *p_sensor_set, void* p_param)
 {
     (void)p_param;
@@ -186,9 +188,9 @@ BOOL hmc5883lInit(PifImuSensorAlign align)
     return TRUE;
 }
 
-void hmc5883lRead(int16_t *magData)
+static BOOL hmc5883lRead(int16_t *magData)
 {
     // During calibration, magGain is 1.0, so the read returns normal non-calibrated values.
     // After calibration is done, magGain is set to calculated gain values.
-    pifImuSensor_ReadMag(&imu_sensor, magData);
+    return pifImuSensor_ReadMag(&imu_sensor, magData);
 }

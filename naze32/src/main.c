@@ -78,7 +78,7 @@ static sensorDetect_t gyro_detect[] = {
 #endif
 
 #ifdef MAG
-	static sensorDetect_t msg_detect[] = { 
+	static sensorDetect_t mag_detect[] = { 
         { (sensorDetectFuncPtr)hmc5883lDetect, NULL }, 
         { (sensorDetectFuncPtr)ak8975detect, NULL },
         { NULL, NULL }
@@ -220,7 +220,7 @@ int main(void)
     initBoardAlignment();
 
     // drop out any sensors that don't seem to work, init all the others. halt if gyro is dead.
-    sensorsOK = sensorsAutodetect(gyro_detect, acc_detect, baro_detect, msg_detect);
+    sensorsOK = sensorsAutodetect(gyro_detect, acc_detect, baro_detect, mag_detect);
     g_board_name = hwNames[hw_revision];
 
     // if gyro was not detected due to whatever reason, we give up now.

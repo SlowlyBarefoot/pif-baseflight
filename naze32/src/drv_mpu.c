@@ -59,11 +59,11 @@ static void mpu6050CheckRevision(void);
 static void mpu6050SelfTest(void);
 #endif
 static BOOL dummyInit(PifImuSensorAlign align);
-static void dummyRead(int16_t *data);
+static BOOL dummyRead(int16_t *data);
 static BOOL mpuAccInit(PifImuSensorAlign align);
-static void mpuAccRead(int16_t *acc_data);
+static BOOL mpuAccRead(int16_t *acc_data);
 static BOOL mpuGyroInit(PifImuSensorAlign align);
-static void mpuGyroRead(int16_t *gyro_data);
+static BOOL mpuGyroRead(int16_t *gyro_data);
 
 typedef struct mpu_access_t {
     mpuReadRegPtr read;
@@ -337,9 +337,10 @@ static BOOL dummyInit(PifImuSensorAlign align)
     return TRUE;
 }
 
-static void dummyRead(int16_t *data)
+static BOOL dummyRead(int16_t *data)
 {
     (void)data;
+    return TRUE;
 }
 
 static BOOL mpuAccInit(PifImuSensorAlign align)
@@ -354,14 +355,14 @@ static BOOL mpuGyroInit(PifImuSensorAlign align)
     return TRUE;
 }
 
-static void mpuAccRead(int16_t *acc_data)
+static BOOL mpuAccRead(int16_t *acc_data)
 {
-    pifImuSensor_ReadAccel(&imu_sensor, acc_data);
+    return pifImuSensor_ReadAccel(&imu_sensor, acc_data);
 }
 
-static void mpuGyroRead(int16_t *gyro_data)
+static BOOL mpuGyroRead(int16_t *gyro_data)
 {
-    pifImuSensor_ReadGyro(&imu_sensor, gyro_data);
+    return pifImuSensor_ReadGyro(&imu_sensor, gyro_data);
 }
 
 static void mpu6050CheckRevision(void)

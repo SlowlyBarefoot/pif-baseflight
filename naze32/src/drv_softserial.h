@@ -57,6 +57,6 @@ void setupSoftSerialSecondary(uint8_t inverted);
 void softSerialWriteByte(serialPort_t *instance, uint8_t ch);
 uint8_t softSerialTotalBytesWaiting(serialPort_t *instance);
 uint8_t softSerialReadByte(serialPort_t *instance);
-void softSerialSetBaudRate(serialPort_t *s, uint32_t baudRate);
+BOOL softSerialSetBaudRate(serialPort_t *s, uint32_t baudRate);
 bool isSoftSerialTransmitBufferEmpty(serialPort_t *s);
 

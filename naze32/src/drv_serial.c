@@ -52,7 +52,7 @@ uint8_t serialRead(serialPort_t *instance)
     }
 }
 
-void serialSetBaudRate(serialPort_t *instance, uint32_t baudRate)
+BOOL serialSetBaudRate(serialPort_t *instance, uint32_t baudRate)
 {
     serialPortVTable_t* vTable;
 
@@ -63,6 +63,7 @@ void serialSetBaudRate(serialPort_t *instance, uint32_t baudRate)
     else {
     	(*instance->comm.act_set_baudrate)(&instance->comm, baudRate);
     }
+    return TRUE;
 }
 
 bool isSerialTransmitBufferEmpty(serialPort_t *instance)

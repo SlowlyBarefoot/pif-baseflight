@@ -13,6 +13,7 @@
 #include "drv_i2c.h"
 #include "drv_pwm.h"
 #include "drv_system.h"
+#include "drv_uart.h"
 
 #include "core/pif_log.h"
 
@@ -35,7 +36,7 @@ int hw_revision = 0;
 static sensorDetect_t gyro_detect[] = { { (sensorDetectFuncPtr)gy86Detect, NULL }, { NULL, NULL } };
 static sensorDetect_t* acc_detect = NULL;
 static sensorDetect_t* baro_detect = NULL;
-static sensorDetect_t* msg_detect = NULL;
+static sensorDetect_t* mag_detect = NULL;
 
 
 static uint32_t _GetArduinoDueUid(uint32_t* unique_id)
@@ -50,21 +51,30 @@ static uint32_t _GetArduinoDueUid(uint32_t* unique_id)
 	return flash_read_unique_id(unique_id, 4);
 }
 
-#ifndef __PIF_NO_LOG__
-
-static uint16_t actLogSendData(PifComm* p_comm, uint8_t* p_buffer, uint16_t size)
-{
-	(void)p_comm;
-
-    return Serial.write((char *)p_buffer, size);
-}
-
-#endif
-
 static void featureDefault(void)
 {
     featureSet(FEATURE_VBAT);
 }
+
+#ifdef __PIF_DEBUG__
+
+void actTaskMeasureLoop()
+{
+	static int sw = 0;
+
+	sw ^= 1;
+	digitalWrite(13, sw);
+}
+
+void actTaskMeasureYield()
+{
+	static int sw = 0;
+
+	sw ^= 1;
+	digitalWrite(13, sw);
+}
+
+#endif
 
 extern "C" {
 	int sysTickHook()
@@ -79,13 +89,15 @@ extern "C" {
 void setup()
 {
     uint8_t i;
+#ifdef __PIF_DEBUG__
     int line;
+	#define FAIL { line = __LINE__; goto fail; }
+#else
+	#define FAIL { goto fail; }
+#endif
     drv_pwm_config_t pwm_params;
     drv_adc_config_t adc_params;
     bool sensorsOK = false;
-#ifndef __PIF_NO_LOG__
-    static PifComm s_comm_log;
-#endif
 
 	analogReadResolution(12);
 	analogWriteResolution(12);
@@ -108,37 +120,34 @@ void setup()
 
     pif_Init(micros);
 
-    if (!pifTaskManager_Init(20)) { line = __LINE__; goto fail; }
+    if (!pifTaskManager_Init(20)) FAIL;
 
-#ifndef __PIF_NO_LOG__
-    pifLog_Init();
+#ifdef __PIF_DEBUG__
+    pif_act_task_loop = actTaskMeasureLoop;
+    pif_act_task_yield = actTaskMeasureYield;
+
+    logOpen();
 #endif
 
-    if (!pifTimerManager_Init(&g_timer_1ms, PIF_ID_AUTO, 1000, 3)) { line = __LINE__; goto fail; }		        // 1000us
+    if (!pifTimerManager_Init(&g_timer_1ms, PIF_ID_AUTO, 1000, 3)) FAIL;		        // 1000us
 
-#ifndef __PIF_NO_LOG__
-	if (!pifComm_Init(&s_comm_log, PIF_ID_AUTO)) { line = __LINE__; goto fail; }
-    if (!pifComm_AttachTask(&s_comm_log, TM_PERIOD_MS, 1, TRUE)) { line = __LINE__; goto fail; }				// 1ms
-    s_comm_log.act_send_data = actLogSendData;
-
-	if (!pifLog_AttachComm(&s_comm_log)) { line = __LINE__; goto fail; }
+#ifdef __PIF_DEBUG__
+    pifLog_Printf(LT_INFO, "Start Baseflight: %d\n", sizeof(master_t));
 #endif
 
-	pifLog_Print(LT_INFO, "Start Baseflight\n");
-
-    if (!buzzerInit()) { line = __LINE__; goto fail; }
+    if (!buzzerInit()) FAIL;
 
     // make sure (at compile time) that config struct doesn't overflow allocated flash pages
     ct_assert(sizeof(mcfg) < STORAGE_VOLUME);
 
     g_featureDefault = featureDefault;
 
-    if (!pifI2cPort_Init(&g_i2c_port, PIF_ID_AUTO, 5, I2C_TRANSFER_SIZE)) { line = __LINE__; goto fail; }
+    if (!pifI2cPort_Init(&g_i2c_port, PIF_ID_AUTO, 5, I2C_TRANSFER_SIZE)) FAIL;
     g_i2c_port.act_read = actI2cRead;
     g_i2c_port.act_write = actI2cWrite;
 
-    if (!initEEPROM()) { line = __LINE__; goto fail; }
-    if (!checkFirstTime(false)) { line = __LINE__; goto fail; }
+    if (!initEEPROM()) FAIL;
+    if (!checkFirstTime(false)) FAIL;
     readEEPROM();
 
     systemInit();
@@ -163,8 +172,10 @@ void setup()
     initBoardAlignment();
 
     // drop out any sensors that don't seem to work, init all the others. halt if gyro is dead.
-    sensorsOK = sensorsAutodetect(gyro_detect, acc_detect, baro_detect, msg_detect);
+    sensorsOK = sensorsAutodetect(gyro_detect, acc_detect, baro_detect, mag_detect);
+#ifdef __PIF_DEBUG__
     pifLog_Printf(LT_INFO, "Sensor: %lxh(%d)", sensorsMask(), sensorsOK);
+#endif
 
     // if gyro was not detected due to whatever reason, we give up now.
     if (!sensorsOK)
@@ -279,7 +290,7 @@ void setup()
     calibratingB = CALIBRATING_BARO_CYCLES;             // 10 seconds init_delay + 200 * 25 ms = 15 seconds before ground pressure settles
     f.SMALL_ANGLE = 1;
 
-    if (!pifTaskManager_Add(TM_PERIOD_MS, 10, taskLoop, NULL, TRUE)) { line = __LINE__; goto fail; }				// 1ms
+    if (!pifTaskManager_Add(TM_PERIOD_MS, 1, taskLoop, NULL, TRUE)) FAIL;         								// 1ms
 
     if (mcfg.looptime) {
         g_task_compute_imu = pifTaskManager_Add(TM_PERIOD_US, mcfg.looptime, taskComputeImu, NULL, TRUE);
@@ -287,40 +298,42 @@ void setup()
     else {
         g_task_compute_imu = pifTaskManager_Add(TM_RATIO, 100, taskComputeImu, NULL, TRUE);	        			// 100%
     }
-    if (!g_task_compute_imu) { line = __LINE__; goto fail; }
+    if (!g_task_compute_imu) FAIL;
     g_task_compute_imu->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
 
     g_task_compute_rc = pifTaskManager_Add(TM_PERIOD_MS, 20, taskComputeRc, NULL, TRUE);	        			// 20ms - 50Hz
-    if (!g_task_compute_rc) { line = __LINE__; goto fail; }
+    if (!g_task_compute_rc) FAIL;
 
 #ifdef MAG
     if (sensors(SENSOR_MAG)) {
         sensor_set.mag.p_m_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskMagGetAdc, NULL, TRUE);				// 100ms
-        if (!sensor_set.mag.p_m_task) { line = __LINE__; goto fail; }
+        if (!sensor_set.mag.p_m_task) FAIL;
         sensor_set.mag.p_m_task->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
     }
 #endif
 
 #ifdef BARO
     if (sensors(SENSOR_BARO)) {
-        sensor_set.baro.p_b_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskGetEstimatedAltitude, NULL, FALSE); // Use immediate
-        if (!sensor_set.baro.p_b_task) { line = __LINE__; goto fail; }
+        sensor_set.baro.p_b_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskGetEstimatedAltitude, NULL, FALSE);// Use immediate
+        if (!sensor_set.baro.p_b_task) FAIL;
     }
 #endif
 
 #ifdef GPS
     g_task_gps = pifTaskManager_Add(TM_PERIOD_MS, 100, taskGpsNewData, NULL, FALSE);                			// Use immediate
-    if (!g_task_gps) { line = __LINE__; goto fail; }
+    if (!g_task_gps) FAIL;
 #endif
 
-    if (!pifTaskManager_Add(TM_PERIOD_MS, 50, taskLedState, NULL, TRUE)) { line = __LINE__; goto fail; }       	// 50ms
+    if (!pifTaskManager_Add(TM_PERIOD_MS, 50, taskLedState, NULL, TRUE)) FAIL;									// 50ms
 
 	pifLog_Printf(LT_INFO, "Task=%d Timer1ms=%d\n", pifTaskManager_Count(),
 			pifTimerManager_Count(&g_timer_1ms));
 	return;
 
 fail:
+#ifdef __PIF_DEBUG__
 	pifLog_Printf(LT_ERROR, "Error=%Xh Line=%u", pif_error, line);
+#endif
 	pifLog_SendAndExit();
 }
 

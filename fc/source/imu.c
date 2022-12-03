@@ -55,19 +55,29 @@ void imuInit(void)
 #endif
 }
 
-void computeIMU(void)
+int computeIMU(int step)
 {
     static int16_t gyroYawSmooth = 0;
 
-    Gyro_getADC();
-    if (sensors(SENSOR_ACC)) {
-        ACC_getADC();
-        getEstimatedAttitude();
-    } else {
-        accADC[X] = 0;
-        accADC[Y] = 0;
-        accADC[Z] = 0;
-    }
+	switch (step) {
+	case 0:
+		if (Gyro_getADC()) {
+			if (sensors(SENSOR_ACC)) return 1;
+
+			accADC[X] = 0;
+			accADC[Y] = 0;
+			accADC[Z] = 0;
+			return 3;
+		}
+		return step;
+
+	case 1:
+		return ACC_getADC() ? 2 : step;
+
+	case 2:
+		getEstimatedAttitude();
+		return 3;
+	}
 
     if (mcfg.mixerConfiguration == MULTITYPE_TRI) {
         gyroData[YAW] = (gyroYawSmooth * 2 + gyroADC[YAW]) / 3;
@@ -77,6 +87,7 @@ void computeIMU(void)
     }
     gyroData[ROLL] = gyroADC[ROLL];
     gyroData[PITCH] = gyroADC[PITCH];
+	return 4;
 }
 
 // **************************************************
@@ -314,7 +325,6 @@ static void getEstimatedAttitude(void)
                 deg = 900;
             throttleAngleCorrection = lrintf(cfg.throttle_correction_value * sinf(deg / (900.0f * M_PI / 2.0f)));
         }
-
     }
 }
 

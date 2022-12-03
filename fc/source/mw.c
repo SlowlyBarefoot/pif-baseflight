@@ -917,10 +917,15 @@ uint16_t taskLoop(PifTask *p_task)
 uint16_t taskComputeImu(PifTask *p_task)
 {
 	uint32_t current;
+	static uint8_t step = 0;
 
     (void)p_task;
 
-        computeIMU();
+    step = computeIMU(step);
+    if (step < 4) {
+		p_task->immediate = TRUE;
+    }
+    else {
         // Measure loop rate just afer reading the sensors
         current = (*pif_act_timer1us)();
         cycleTime = (int32_t)(current - previousTime);
@@ -1020,6 +1025,22 @@ uint16_t taskComputeImu(PifTask *p_task)
         mixTable();
         writeServos();
         writeMotors();
+        step = 0;
+	}
 
     return 0;
+}
+
+__attribute__ ((weak)) BOOL serialStartReceiveFunc(PifComm* p_comm)
+{
+	(void)p_comm;
+
+	return TRUE;
+}
+
+__attribute__ ((weak)) BOOL serialStopReceiveFunc(PifComm* p_comm)
+{
+	(void)p_comm;
+
+	return TRUE;
 }

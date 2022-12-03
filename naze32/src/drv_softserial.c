@@ -434,7 +434,7 @@ void softSerialWriteByte(serialPort_t *s, uint8_t ch)
     softSerial->txBufferHead = (softSerial->txBufferHead + 1) % softSerial->txBufferSize;
 }
 
-void softSerialSetBaudRate(serialPort_t *s, uint32_t baudRate)
+BOOL softSerialSetBaudRate(serialPort_t *s, uint32_t baudRate)
 {
     uint32_t newbaudRate;
 
@@ -446,6 +446,7 @@ void softSerialSetBaudRate(serialPort_t *s, uint32_t baudRate)
     // Dummy implementation. Whole soft serial should be redesigned with faster&separate baud rates per port.
     softSerial_t* softSerial = (softSerial_t*)s;
     setupSoftSerialPrimary(newbaudRate, softSerial->isInverted);
+    return TRUE;
 }
 
 void softSerialSetMode(serialPort_t *instance, portMode_t mode)

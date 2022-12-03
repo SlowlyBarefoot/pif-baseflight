@@ -77,5 +77,7 @@ BOOL spektrumInit(int uart, rcReadRawDataPtr *callback)
     if (callback)
         *callback = spektrumReadRawRC;
 
+    serialStartReceiveFunc(&core.rcvrport->comm);
+
     return TRUE;
 }

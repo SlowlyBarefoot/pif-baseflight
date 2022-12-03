@@ -67,7 +67,6 @@ void systemInit(void)
         },
 #endif
 #ifdef LED1
-
         {
             .gpio = LED1_GPIO,
             .cfg = { LED1_PIN, Mode_Out_PP, Speed_2MHz }

@@ -1,3 +1,5 @@
 *.ar
 *.mk
 makefile
+/Debug/
+/Release/

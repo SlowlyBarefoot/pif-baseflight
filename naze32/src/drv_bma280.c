@@ -14,7 +14,7 @@
 extern uint16_t acc_1G;
 
 static BOOL bma280Init(PifImuSensorAlign align);
-static void bma280Read(int16_t *accelData);
+static BOOL bma280Read(int16_t *accelData);
 
 static PifImuSensorAlign accAlign = IMUS_ALIGN_CW0_DEG;
 
@@ -49,7 +49,7 @@ static BOOL bma280Init(PifImuSensorAlign align)
     return TRUE;
 }
 
-static void bma280Read(int16_t *accelData)
+static BOOL bma280Read(int16_t *accelData)
 {
     uint8_t buf[6];
     int16_t data[3];
@@ -62,4 +62,5 @@ static void bma280Read(int16_t *accelData)
     data[2] = (int16_t)((buf[4] >> 2) + (buf[5] << 8));
 
     alignSensors(data, accelData, accAlign);
+    return TRUE;
 }

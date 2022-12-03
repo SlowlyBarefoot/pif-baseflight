@@ -51,5 +51,7 @@ BOOL sbusInit(int uart, rcReadRawDataPtr *callback)
     if (callback)
         *callback = sbusReadRawRC;
 
+    serialStartReceiveFunc(&core.rcvrport->comm);
+
     return TRUE;
 }

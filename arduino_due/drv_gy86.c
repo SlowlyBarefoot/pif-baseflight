@@ -30,11 +30,11 @@ static BOOL mpu6050Init(sensor_t *acc, sensor_t *gyro, sensor_t *mag, PifGy86Con
 
 // General forward declarations
 static BOOL mpuAccInit(PifImuSensorAlign align);
-static void mpuAccRead(int16_t *accData);
+static BOOL mpuAccRead(int16_t *accData);
 static BOOL mpuGyroInit(PifImuSensorAlign align);
-static void mpuGyroRead(int16_t *gyroData);
+static BOOL mpuGyroRead(int16_t *gyroData);
 static BOOL hmc5883lInit(PifImuSensorAlign align);
-static void hmc5883lRead(int16_t *magData);
+static BOOL hmc5883lRead(int16_t *magData);
 
 // Needed for MPU6050 half-scale acc bug
 extern uint16_t acc_1G;
@@ -124,12 +124,9 @@ static BOOL mpuAccInit(PifImuSensorAlign align)
     return TRUE;
 }
 
-static void mpuAccRead(int16_t *accData)
+static BOOL mpuAccRead(int16_t *accData)
 {
-	while (1) {
-	    if (pifImuSensor_ReadAccel(&imu_sensor, accData)) return;
-	    pif_Delay1us(100);
-	}
+    return pifImuSensor_ReadAccel(&imu_sensor, accData);
 }
 
 static BOOL mpuGyroInit(PifImuSensorAlign align)
@@ -138,12 +135,9 @@ static BOOL mpuGyroInit(PifImuSensorAlign align)
     return TRUE;
 }
 
-static void mpuGyroRead(int16_t *gyroData)
+static BOOL mpuGyroRead(int16_t *gyroData)
 {
-	while (1) {
-		if (pifImuSensor_ReadGyro(&imu_sensor, gyroData)) return;
-	    pif_Delay1us(100);
-	}
+	return pifImuSensor_ReadGyro(&imu_sensor, gyroData);
 }
 
 static BOOL hmc5883lInit(PifImuSensorAlign align)
@@ -236,12 +230,9 @@ static BOOL hmc5883lInit(PifImuSensorAlign align)
     return TRUE;
 }
 
-static void hmc5883lRead(int16_t *magData)
+static BOOL hmc5883lRead(int16_t *magData)
 {
     // During calibration, magGain is 1.0, so the read returns normal non-calibrated values.
     // After calibration is done, magGain is set to calculated gain values.
-	while (1) {
-		if (pifImuSensor_ReadMag(&imu_sensor, magData)) return;
-	    pif_Delay1us(100);
-	}
+	return pifImuSensor_ReadMag(&imu_sensor, magData);
 }

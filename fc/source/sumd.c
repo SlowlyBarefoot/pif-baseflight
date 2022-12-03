@@ -40,5 +40,7 @@ BOOL sumdInit(int uart, rcReadRawDataPtr *callback)
     if (callback)
         *callback = sumdReadRawRC;
 
+    serialStartReceiveFunc(&core.rcvrport->comm);
+
     return TRUE;
 }

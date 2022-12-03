@@ -18,4 +18,4 @@ typedef struct {
 } uartPort_t;
 
 // serialPort API
-void uartSetBaudRate(serialPort_t *s, uint32_t baudRate);
+void uartSetBaudRate(uartPort_t *s, uint32_t baudRate);
