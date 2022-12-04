@@ -5,6 +5,7 @@
 *.o
 *.ko
 *.obj
+*.mk
 
 # Linker output
 *.ilk
@@ -51,4 +52,5 @@ dkms.conf
 # Mercurial
 .hg
 .hgignore
-
+.vscode
+*-workspace
