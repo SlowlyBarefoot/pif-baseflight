@@ -386,13 +386,13 @@ int main(void)
 
 #ifdef BARO
     if (sensors(SENSOR_BARO)) {
-        sensor_set.baro.p_b_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskGetEstimatedAltitude, NULL, FALSE); // Use immediate
+        sensor_set.baro.p_b_task = pifTaskManager_Add(TM_NEED, 0, taskGetEstimatedAltitude, NULL, FALSE);
         if (!sensor_set.baro.p_b_task) goto bootloader;
     }
 #endif
 
 #ifdef GPS
-    g_task_gps = pifTaskManager_Add(TM_PERIOD_MS, 100, taskGpsNewData, NULL, FALSE);                // Use immediate
+    g_task_gps = pifTaskManager_Add(TM_NEED, 0, taskGpsNewData, NULL, FALSE);
     if (!g_task_gps) goto bootloader;
 #endif
 

@@ -921,17 +921,28 @@ uint16_t taskComputeImu(PifTask *p_task)
 
     (void)p_task;
 
-    step = computeIMU(step);
-    if (step < 4) {
-		p_task->immediate = TRUE;
-    }
-    else {
+    switch (step) {
+    case 0:
         // Measure loop rate just afer reading the sensors
         current = (*pif_act_timer1us)();
         cycleTime = (int32_t)(current - previousTime);
         previousTime = current;
+    
+    case 1:
+    case 2:
+    case 3:
+        step = computeIMU(step);
+		p_task->immediate = TRUE;
+		break;
+
+    case 4:
         // non IMU critical, temeperatur
         annexCode();
+        step = 5;
+		p_task->immediate = TRUE;
+    	break;
+
+    case 5:
 #ifdef MAG
         if (sensors(SENSOR_MAG)) {
             if (abs(rcCommand[YAW]) < 70 && f.MAG_MODE) {
@@ -1018,7 +1029,11 @@ uint16_t taskComputeImu(PifTask *p_task)
             }
         }
 #endif
+        step = 6;
+		p_task->immediate = TRUE;
+    	break;
 
+    case 6:
         // PID - note this is function pointer set by setPIDController()
         pid_controller();
 
@@ -1026,6 +1041,7 @@ uint16_t taskComputeImu(PifTask *p_task)
         writeServos();
         writeMotors();
         step = 0;
+    	break;
 	}
 
     return 0;

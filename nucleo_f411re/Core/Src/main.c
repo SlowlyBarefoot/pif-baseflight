@@ -108,20 +108,9 @@ static void featureDefault(void)
 
 #ifdef __PIF_DEBUG__
 
-void actTaskMeasureLoop()
+void actTaskSignal(BOOL state)
 {
-	static int sw = 0;
-
-	sw ^= 1;
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, sw);
-}
-
-void actTaskMeasureYield()
-{
-	static int sw = 0;
-
-	sw ^= 1;
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, sw);
+	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, state);
 }
 
 #endif
@@ -182,8 +171,7 @@ int main(void)
     if (!pifTaskManager_Init(20)) FAIL;
 
 #ifdef __PIF_DEBUG__
-    pif_act_task_loop = actTaskMeasureLoop;
-    pif_act_task_yield = actTaskMeasureYield;
+    pif_act_task_signal = actTaskSignal;
 
     logOpen();
 #endif
@@ -364,12 +352,12 @@ int main(void)
     	g_task_compute_imu = pifTaskManager_Add(TM_PERIOD_US, mcfg.looptime, taskComputeImu, NULL, TRUE);
     }
     else {
-    	g_task_compute_imu = pifTaskManager_Add(TM_RATIO, 100, taskComputeImu, NULL, TRUE);	       	 			// 100%
+    	g_task_compute_imu = pifTaskManager_Add(TM_ALWAYS, 0, taskComputeImu, NULL, TRUE);
     }
     if (!g_task_compute_imu) FAIL;
     g_task_compute_imu->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
 
-    g_task_compute_rc = pifTaskManager_Add(TM_PERIOD_MS, 20, taskComputeRc, NULL, TRUE);							// 20ms - 50Hz
+    g_task_compute_rc = pifTaskManager_Add(TM_PERIOD_MS, 20, taskComputeRc, NULL, TRUE);						// 20ms - 50Hz
     if (!g_task_compute_rc) FAIL;
 
 #ifdef MAG
@@ -382,13 +370,13 @@ int main(void)
 
 #ifdef BARO
     if (sensors(SENSOR_BARO)) {
-        sensor_set.baro.p_b_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskGetEstimatedAltitude, NULL, FALSE);// Use immediate
+        sensor_set.baro.p_b_task = pifTaskManager_Add(TM_NEED, 0, taskGetEstimatedAltitude, NULL, FALSE);
         if (!sensor_set.baro.p_b_task) FAIL;
     }
 #endif
 
 #ifdef GPS
-    g_task_gps = pifTaskManager_Add(TM_PERIOD_MS, 100, taskGpsNewData, NULL, FALSE);                			// Use immediate
+    g_task_gps = pifTaskManager_Add(TM_NEED, 0, taskGpsNewData, NULL, FALSE);
     if (!g_task_gps) FAIL;
 #endif
 

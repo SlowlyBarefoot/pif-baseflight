@@ -628,7 +628,8 @@ void evtMspReceive(PifMsp* p_owner, PifMspPacket* p_packet)
     case MSP_ANALOG:
         _Serialize8(p_port, (uint8_t)constrain((int16_t)vbat, 0, 255));
         _Serialize16(p_port, (uint16_t)constrain(mAhdrawn, 0, 0xFFFF)); // milliamphours drawn from battery
-        _Serialize16(p_port, rssi);
+//        _Serialize16(p_port, rssi);
+        _Serialize16(p_port, pif_performance._use_rate * 10);
         if (mcfg.multiwiicurrentoutput)
             _Serialize16(p_port, (uint16_t)constrain((abs(amperage) * 10), 0, 0xFFFF)); // send amperage in 0.001 A steps
         else
