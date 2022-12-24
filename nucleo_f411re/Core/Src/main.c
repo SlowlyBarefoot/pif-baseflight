@@ -249,6 +249,9 @@ int main(void)
 #endif
     serialInit(UART_PORT_1, mcfg.serial_baudrate, UART_PORT_NONE);
 
+    g_task_compute_rc = pifTaskManager_Add(TM_NEED, 0, taskComputeRc, NULL, FALSE);
+    if (!g_task_compute_rc) FAIL;
+
     // when using airplane/wing mixer, servo/motor outputs are remapped
     if (mcfg.mixerConfiguration == MULTITYPE_AIRPLANE || mcfg.mixerConfiguration == MULTITYPE_FLYING_WING || mcfg.mixerConfiguration == MULTITYPE_CUSTOM_PLANE)
         pwm_params.airplane = true;
@@ -292,7 +295,6 @@ int main(void)
         rcData[i] = 1502;
     rcReadRawFunc = pwmReadRawRC;
 
-#ifndef __PIF_DEBUG__
     if (feature(FEATURE_SERIALRX)) {
         switch (mcfg.serialrx_type) {
             case SERIALRX_SPEKTRUM1024:
@@ -315,7 +317,6 @@ int main(void)
                 break;
         }
     }
-#endif
 
     // Optional GPS - available in both PPM, PWM and serialRX input mode, in PWM input, reduces number of available channels by 2.
     // gpsInit will return if FEATURE_GPS is not enabled.
@@ -339,7 +340,6 @@ int main(void)
         initTelemetry();
 #endif
 
-    previousTime = (*pif_act_timer1us)();
     if (mcfg.mixerConfiguration == MULTITYPE_GIMBAL)
         calibratingA = CALIBRATING_ACC_CYCLES;
     calibratingG = CALIBRATING_GYRO_CYCLES;
@@ -356,9 +356,6 @@ int main(void)
     }
     if (!g_task_compute_imu) FAIL;
     g_task_compute_imu->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
-
-    g_task_compute_rc = pifTaskManager_Add(TM_PERIOD_MS, 20, taskComputeRc, NULL, TRUE);						// 20ms - 50Hz
-    if (!g_task_compute_rc) FAIL;
 
 #ifdef MAG
     if (sensors(SENSOR_MAG)) {

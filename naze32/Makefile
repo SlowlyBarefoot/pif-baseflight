@@ -70,7 +70,6 @@ COMMON_SRC	 = buzzer.c \
 		   pif_i2c.c \
 		   pif_list.c \
 		   pif_log.c \
-		   pif_pulse.c \
 		   pif_ring_buffer.c \
 		   pif_task.c \
 		   pif_timer.c \
@@ -82,6 +81,8 @@ COMMON_SRC	 = buzzer.c \
 		   pif_msp.c \
 		   pif_rc.c \
 		   pif_rc_ibus.c \
+		   pif_rc_ppm.c \
+		   pif_rc_pwm.c \
 		   pif_rc_sbus.c \
 		   pif_rc_spektrum.c \
 		   pif_rc_sumd.c \
@@ -154,6 +155,7 @@ VPATH		:= $(VPATH): \
 			$(ROOT)/../../pif/source/filter: \
 			$(ROOT)/../../pif/source/gps: \
 			$(ROOT)/../../pif/source/protocol: \
+			$(ROOT)/../../pif/source/rc: \
 			$(ROOT)/../../pif/source/sensor: \
 			$(ROOT)/../../pif/source/sound: \
 			$(ROOT)/../../pif/source/storage

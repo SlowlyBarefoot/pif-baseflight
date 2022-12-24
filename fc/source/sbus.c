@@ -6,7 +6,7 @@
 #include "board.h"
 #include "mw.h"
 
-#include "protocol/pif_rc_sbus.h"
+#include "rc/pif_rc_sbus.h"
 
 
 #define SBUS_MAX_CHANNEL    8
@@ -21,8 +21,10 @@ static uint16_t sbusReadRawRC(uint8_t chan)
     return sbusChannelData[mcfg.rcmap[chan]];
 }
 
-static void _evtSbusReceive(PifRc* p_owner, uint16_t* channel)
+static void _evtSbusReceive(PifRc* p_owner, uint16_t* channel, PifIssuerP p_issuer)
 {
+    PifTask* p_task;
+
     // internal failsafe enabled and rx failsafe flag set
     if (feature(FEATURE_FAILSAFE) && pifRc_CheckFailSafe(p_owner)) return;
 
@@ -31,7 +33,8 @@ static void _evtSbusReceive(PifRc* p_owner, uint16_t* channel)
 		sbusChannelData[i] = channel[i];
 	}
 
-    g_task_compute_rc->immediate = TRUE;
+	p_task = (PifTask*)p_issuer;
+	if (!p_task->_running) p_task->immediate = TRUE;
 }
 
 BOOL sbusInit(int uart, rcReadRawDataPtr *callback)
@@ -45,7 +48,7 @@ BOOL sbusInit(int uart, rcReadRawDataPtr *callback)
     if (!core.rcvrport) return FALSE;
 
     if (!pifRcSbus_Init(&s_sbus, PIF_ID_AUTO)) return FALSE;
-    s_sbus.evt_receive = _evtSbusReceive;
+    pifRc_AttachEvtReceive(&s_sbus.parent, _evtSbusReceive, g_task_compute_rc);
     pifRcSbus_AttachComm(&s_sbus, &core.rcvrport->comm);
 
     if (callback)

@@ -7,7 +7,7 @@
 #include "mw.h"
 
 #include "core/pif_log.h"
-#include "protocol/pif_rc_spektrum.h"
+#include "rc/pif_rc_spektrum.h"
 
 
 #define SPEK_2048_MAX_CHANNEL       8
@@ -21,7 +21,7 @@ static uint16_t spektrumReadRawRC(uint8_t chan)
 {
 	uint16_t data;
 
-    if (chan >= s_spektrum.parent.channel_count) {
+    if (chan >= s_spektrum.parent._channel_count) {
         data = mcfg.midrc;
     } else {
         data = spekChannelData[mcfg.rcmap[chan]];
@@ -30,19 +30,21 @@ static uint16_t spektrumReadRawRC(uint8_t chan)
     return data;
 }
 
-static void _evtSpektrumReceive(PifRc* p_owner, uint16_t* channel)
+static void _evtSpektrumReceive(PifRc* p_owner, uint16_t* channel, PifIssuerP p_issuer)
 {
 	int i;
+    PifTask* p_task;
 
     // internal failsafe enabled and rx failsafe flag set
     if (feature(FEATURE_FAILSAFE) && pifRc_CheckFailSafe(p_owner)) return;
 
     failsafeCnt = 0;
-    for (i = 0; i < p_owner->channel_count; i++) {
+    for (i = 0; i < p_owner->_channel_count; i++) {
         spekChannelData[i] = channel[i];
     }
 
-    g_task_compute_rc->immediate = TRUE;
+	p_task = (PifTask*)p_issuer;
+	if (!p_task->_running) p_task->immediate = TRUE;
 }
 
 BOOL spektrumInit(int uart, rcReadRawDataPtr *callback)
@@ -71,7 +73,7 @@ BOOL spektrumInit(int uart, rcReadRawDataPtr *callback)
     if (!core.rcvrport) return FALSE;
 
     if (!pifRcSpektrum_Init(&s_spektrum, PIF_ID_AUTO, Protocol_id)) return FALSE;
-    s_spektrum.evt_receive = _evtSpektrumReceive;
+    pifRc_AttachEvtReceive(&s_spektrum.parent, _evtSpektrumReceive, g_task_compute_rc);
     pifRcSpektrum_AttachComm(&s_spektrum, &core.rcvrport->comm);
 
     if (callback)

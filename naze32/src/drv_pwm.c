@@ -9,7 +9,8 @@
 #include "drv_pwm.h"
 #include "drv_timer.h"
 
-#include "core/pif_pulse.h"
+#include "rc/pif_rc_ppm.h"
+#include "rc/pif_rc_pwm.h"
 
 /*
     Configuration maps:
@@ -52,7 +53,6 @@ typedef struct {
     // for input only
     uint8_t channel;
     uint8_t state;
-    PifPulse pulse;
 } pwmPortData_t;
 
 enum {
@@ -64,6 +64,10 @@ enum {
 
 typedef void (*pwmWriteFuncPtr)(uint8_t index, uint16_t value);  // function pointer used to write motors
 
+static union {
+	PifRcPwm pwm;
+	PifRcPpm ppm;
+} s_rc;
 static pwmPortData_t pwmPorts[MAX_PORTS];
 static uint16_t captures[MAX_PPM_INPUTS];    // max out the captures array, just in case...
 static pwmPortData_t *motors[MAX_MOTORS];
@@ -307,10 +311,12 @@ static void failsafeCheck(uint8_t channel, uint16_t pulse)
 
 static void ppmCallback(uint8_t port, uint16_t capture)
 {
-    PifPulse* p_pulse = &pwmPorts[port].pulse;
+    (void)port;
+    (void)capture;
 
-    if (pifPulse_sigTick(p_pulse, capture)) {
-        failsafeCheck(p_pulse->_channel, captures[p_pulse->_channel]);
+	uint16_t value = pifRcPpm_sigTick(&s_rc.ppm, capture);
+    if (value) {
+        failsafeCheck(s_rc.ppm._channel, value);
     }
 }
 
@@ -319,19 +325,31 @@ static void pwmCallback(uint8_t port, uint16_t capture)
     uint16_t value;
 
     if (pwmPorts[port].state == 0) {
-        pifPulse_sigEdge(&pwmPorts[port].pulse, PE_RISING, capture);
+        pifRcPwm_sigEdge(&s_rc.pwm, port, PS_RISING_EDGE, capture);
         pwmPorts[port].state = 1;
         pwmICConfig(timerHardware[port].tim, timerHardware[port].channel, TIM_ICPolarity_Falling);
     } else {
-        pifPulse_sigEdge(&pwmPorts[port].pulse, PE_FALLING, capture);
-        value = pifPulse_GetHighWidth(&pwmPorts[port].pulse);
+        value = pifRcPwm_sigEdge(&s_rc.pwm, port, PS_FALLING_EDGE, capture);
         if (value) {
             failsafeCheck(pwmPorts[port].channel, value);
         }
         // switch state
         pwmPorts[port].state = 0;
         pwmICConfig(timerHardware[port].tim, timerHardware[port].channel, TIM_ICPolarity_Rising);
+
+        if (port + 1 == numInputs) g_task_compute_rc->immediate = TRUE;
     }
+}
+
+static void _evtRcReceive(PifRc* p_owner, uint16_t* p_channel, PifIssuerP p_issuer)
+{
+    PifTask* p_task = (PifTask*)p_issuer;
+    int i;
+
+	for (i = 0; i < p_owner->_channel_count; i++) {
+		captures[i] = p_channel[i];
+	}
+    if (!p_task->_running) p_task->immediate = TRUE;
 }
 
 static void pwmWriteBrushed(uint8_t index, uint16_t value)
@@ -357,7 +375,6 @@ bool pwmInit(drv_pwm_config_t *init)
     int i = 0;
     const uint8_t *setup;
     uint16_t period;
-    pwmPortData_t *p;
 
     // to avoid importing cfg/mcfg
     failsafeThreshold = init->failsafeThreshold;
@@ -411,21 +428,11 @@ bool pwmInit(drv_pwm_config_t *init)
         }
 
         if (mask & TYPE_IP) {
-            p = &pwmPorts[port];
-            if (pifPulse_Init(&p->pulse, PIF_ID_AUTO)) {
-                pifPulse_SetPositionMode(&p->pulse, 8, 2700, captures);
-                pifPulse_SetValidRange(&p->pulse, PIF_PMM_TICK_POSITION, PULSE_MIN, PULSE_MAX);
-                pwmInConfig(port, ppmCallback, 0);
-                numInputs = 8;
-            }
+            pwmInConfig(port, ppmCallback, 0);
+            numInputs = 8;
         } else if (mask & TYPE_IW) {
-            p = &pwmPorts[port];
-            if (pifPulse_Init(&p->pulse, PIF_ID_AUTO)) {
-                pifPulse_SetMeasureMode(&p->pulse, PIF_PMM_EDGE_HIGH_WIDTH);
-                pifPulse_SetValidRange(&p->pulse, PIF_PMM_EDGE_HIGH_WIDTH, PULSE_MIN, PULSE_MAX);
-                pwmInConfig(port, pwmCallback, numInputs);
-                numInputs++;
-            }
+            pwmInConfig(port, pwmCallback, numInputs);
+            numInputs++;
         } else if (mask & TYPE_M) {
             uint32_t hz, mhz;
 
@@ -446,6 +453,21 @@ bool pwmInit(drv_pwm_config_t *init)
             motors[numMotors++] = pwmOutConfig(port, mhz, period, init->idlePulse);
         } else if (mask & TYPE_S) {
             servos[numServos++] = pwmOutConfig(port, PWM_TIMER_MHZ, 1000000 / init->servoPwmRate, init->servoCenterPulse);
+        }
+    }
+
+    if (init->enableInput) {
+        if (init->usePPM) {
+            if (pifRcPpm_Init(&s_rc.ppm, PIF_ID_AUTO, numInputs, 2700)) {
+                pifRcPpm_SetValidRange(&s_rc.ppm, PULSE_MIN, PULSE_MAX);
+                pifRc_AttachEvtReceive(&s_rc.ppm.parent, _evtRcReceive, g_task_compute_rc);
+            }
+        }
+        else {
+            if (pifRcPwm_Init(&s_rc.pwm, PIF_ID_AUTO, numInputs)) {
+                pifRcPwm_SetValidRange(&s_rc.pwm, PULSE_MIN, PULSE_MAX);
+                pifRc_AttachEvtReceive(&s_rc.pwm.parent, _evtRcReceive, g_task_compute_rc);
+            }
         }
     }
 

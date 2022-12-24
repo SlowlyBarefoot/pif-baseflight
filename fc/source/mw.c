@@ -20,7 +20,6 @@ uint32_t g_unique_id[3];
 
 flags_t f;
 int16_t debug[4];
-uint32_t previousTime = 0;
 uint16_t cycleTime = 0;         // this is the number in micro second to achieve a full loop, it can differ a little and is taken into account in the PID loop
 int16_t headFreeModeHold;
 
@@ -512,7 +511,7 @@ void setPIDController(int type)
     static int16_t initialThrottleHold;
 #endif
 
-uint16_t taskComputeRc(PifTask *p_task)	// 50Hz
+uint16_t taskComputeRc(PifTask *p_task)
 {
     static uint8_t rcDelayCommand;      // this indicates the number of time (multiple of RC measurement at 50Hz) the sticks must be maintained to run or switch off motors
     static uint8_t rcSticks;            // this hold sticks position for command combos
@@ -916,7 +915,6 @@ uint16_t taskLoop(PifTask *p_task)
 
 uint16_t taskComputeImu(PifTask *p_task)
 {
-	uint32_t current;
 	static uint8_t step = 0;
 
     (void)p_task;
@@ -924,9 +922,7 @@ uint16_t taskComputeImu(PifTask *p_task)
     switch (step) {
     case 0:
         // Measure loop rate just afer reading the sensors
-        current = (*pif_act_timer1us)();
-        cycleTime = (int32_t)(current - previousTime);
-        previousTime = current;
+        cycleTime = pifTask_GetDeltaTime(p_task);
     
     case 1:
     case 2:

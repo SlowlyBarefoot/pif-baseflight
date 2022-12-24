@@ -8,7 +8,8 @@
 
 #include "drv_pwm.h"
 
-#include "core/pif_pulse.h"
+#include "rc/pif_rc_ppm.h"
+#include "rc/pif_rc_pwm.h"
 
 /*
     Configuration maps:
@@ -48,7 +49,6 @@ typedef struct {
     // for input only
     uint8_t channel;
     uint8_t port;
-    PifPulse pulse;
 } pwmPortData_t;
 
 enum {
@@ -66,6 +66,10 @@ typedef struct {
 
 typedef void (*pwmWriteFuncPtr)(uint8_t index, uint16_t value);  // function pointer used to write motors
 
+static union {
+	PifRcPwm pwm;
+	PifRcPpm ppm;
+} s_rc;
 static pwmPortData_t pwmPorts[MAX_PORTS];
 static uint16_t captures[MAX_PPM_INPUTS];    // max out the captures array, just in case...
 static pwmPortData_t *motors[MAX_MOTORS];
@@ -165,11 +169,21 @@ static void failsafeCheck(uint8_t channel, uint16_t pulse)
 
 void pwmReadRc()
 {
-    PifPulse* p_pulse = &pwmPorts[0].pulse;
+	uint16_t value = pifRcPpm_sigTick(&s_rc.ppm, (*pif_act_timer1us)());
+    if (value) {
+        failsafeCheck(s_rc.ppm._channel, value);
+    }
+}
 
-	if (pifPulse_sigTick(p_pulse, (*pif_act_timer1us)())) {
-		failsafeCheck(p_pulse->_channel, captures[p_pulse->_channel]);
+static void _evtRcReceive(PifRc* p_owner, uint16_t* p_channel, PifIssuerP p_issuer)
+{
+    PifTask* p_task = (PifTask*)p_issuer;
+    int i;
+
+	for (i = 0; i < p_owner->_channel_count; i++) {
+		captures[i] = p_channel[i];
 	}
+    if (!p_task->_running) p_task->immediate = TRUE;
 }
 
 static void pwmWriteStandard(uint8_t index, uint16_t value)
@@ -217,46 +231,38 @@ bool pwmInit(drv_pwm_config_t *init)
 
         if (type & TYPE_IP) {
             p = &pwmPorts[pwm];
-            if (pifPulse_Init(&p->pulse, PIF_ID_AUTO)) {
-                pifPulse_SetPositionMode(&p->pulse, 8, 2700, captures);
-                pifPulse_SetValidRange(&p->pulse, PIF_PMM_TICK_POSITION, PULSE_MIN, PULSE_MAX);
-                numInputs = 8;
-            }
+            numInputs = 8;
         } else if (type & TYPE_IW) {
 /*
             p = &pwmPorts[pwm];
-            if (pifPulse_Init(&p->pulse, PIF_ID_AUTO)) {
-                pifPulse_SetMeasureMode(&p->pulse, PIF_PMM_EDGE_HIGH_WIDTH);
-                pifPulse_SetValidRange(&p->pulse, PIF_PMM_EDGE_HIGH_WIDTH, PULSE_MIN, PULSE_MAX);
-            	pinMode(setup[i].port, INPUT_PULLUP);
-            	switch (i) {
-            	case 0:
-                	attachInterrupt(setup[i].port, _isrPulseWidth1, CHANGE);
-                	break;
-            	case 1:
-                	attachInterrupt(setup[i].port, _isrPulseWidth2, CHANGE);
-                	break;
-            	case 2:
-                	attachInterrupt(setup[i].port, _isrPulseWidth3, CHANGE);
-                	break;
-            	case 3:
-                	attachInterrupt(setup[i].port, _isrPulseWidth4, CHANGE);
-                	break;
-            	case 4:
-                	attachInterrupt(setup[i].port, _isrPulseWidth5, CHANGE);
-                	break;
-            	case 5:
-                	attachInterrupt(setup[i].port, _isrPulseWidth6, CHANGE);
-                	break;
-            	case 6:
-                	attachInterrupt(setup[i].port, _isrPulseWidth7, CHANGE);
-                	break;
-            	case 7:
-                	attachInterrupt(setup[i].port, _isrPulseWidth8, CHANGE);
-                	break;
-            	}
-                numInputs++;
-            }
+			pinMode(setup[i].port, INPUT_PULLUP);
+			switch (i) {
+			case 0:
+				attachInterrupt(setup[i].port, _isrPulseWidth1, CHANGE);
+				break;
+			case 1:
+				attachInterrupt(setup[i].port, _isrPulseWidth2, CHANGE);
+				break;
+			case 2:
+				attachInterrupt(setup[i].port, _isrPulseWidth3, CHANGE);
+				break;
+			case 3:
+				attachInterrupt(setup[i].port, _isrPulseWidth4, CHANGE);
+				break;
+			case 4:
+				attachInterrupt(setup[i].port, _isrPulseWidth5, CHANGE);
+				break;
+			case 5:
+				attachInterrupt(setup[i].port, _isrPulseWidth6, CHANGE);
+				break;
+			case 6:
+				attachInterrupt(setup[i].port, _isrPulseWidth7, CHANGE);
+				break;
+			case 7:
+				attachInterrupt(setup[i].port, _isrPulseWidth8, CHANGE);
+				break;
+			}
+			numInputs++;
 */
         } else if (type & TYPE_M) {
             uint32_t hz, mhz;
@@ -281,6 +287,21 @@ bool pwmInit(drv_pwm_config_t *init)
         	pwmPorts[pwm].period = 1000000 / init->servoPwmRate;
             servos[numServos++] = &pwmPorts[pwm];
         }
+    }
+
+    if (init->enableInput) {
+		if (init->usePPM) {
+			if (pifRcPpm_Init(&s_rc.ppm, PIF_ID_AUTO, numInputs, 2700)) {
+				pifRcPpm_SetValidRange(&s_rc.ppm, PULSE_MIN, PULSE_MAX);
+				pifRc_AttachEvtReceive(&s_rc.ppm.parent, _evtRcReceive, g_task_compute_rc);
+			}
+		}
+		else {
+			if (pifRcPwm_Init(&s_rc.pwm, PIF_ID_AUTO, numInputs)) {
+				pifRcPwm_SetValidRange(&s_rc.pwm, PULSE_MIN, PULSE_MAX);
+				pifRc_AttachEvtReceive(&s_rc.pwm.parent, _evtRcReceive, g_task_compute_rc);
+			}
+		}
     }
 
     // determine motor writer function

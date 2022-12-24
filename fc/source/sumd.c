@@ -1,7 +1,7 @@
 #include "board.h"
 #include "mw.h"
 
-#include "protocol/pif_rc_sumd.h"
+#include "rc/pif_rc_sumd.h"
 
 
 #define SUMD_MAX_CHANNEL    8
@@ -16,8 +16,10 @@ static uint16_t sumdReadRawRC(uint8_t chan)
     return sumdChannelData[mcfg.rcmap[chan]];
 }
 
-static void _evtSumdReceive(PifRc* p_owner, uint16_t* channel)
+static void _evtSumdReceive(PifRc* p_owner, uint16_t* channel, PifIssuerP p_issuer)
 {
+    PifTask* p_task;
+
     // internal failsafe enabled and rx failsafe flag set
     if (feature(FEATURE_FAILSAFE) && pifRc_CheckFailSafe(p_owner)) return;
 
@@ -25,7 +27,8 @@ static void _evtSumdReceive(PifRc* p_owner, uint16_t* channel)
 	for (int b = 0; b < SUMD_MAX_CHANNEL; b++)
 		sumdChannelData[b] = channel[b];
 
-    g_task_compute_rc->immediate = TRUE;
+	p_task = (PifTask*)p_issuer;
+	if (!p_task->_running) p_task->immediate = TRUE;
 }
 
 BOOL sumdInit(int uart, rcReadRawDataPtr *callback)
@@ -34,7 +37,7 @@ BOOL sumdInit(int uart, rcReadRawDataPtr *callback)
     if (!core.rcvrport) return FALSE;
 
     if (!pifRcSumd_Init(&s_sumd, PIF_ID_AUTO)) return FALSE;
-    s_sumd.evt_receive = _evtSumdReceive;
+    pifRc_AttachEvtReceive(&s_sumd.parent, _evtSumdReceive, g_task_compute_rc);
     pifRcSumd_AttachComm(&s_sumd, &core.rcvrport->comm);
 
     if (callback)

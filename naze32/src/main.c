@@ -245,6 +245,9 @@ int main(void)
 
     serialInit(UART_PORT_1, mcfg.serial_baudrate, (hw_revision == NAZE32_SP && !mcfg.spektrum_sat_on_flexport) ? UART_PORT_3 : UART_PORT_NONE);
 
+    g_task_compute_rc = pifTaskManager_Add(TM_NEED, 0, taskComputeRc, NULL, FALSE);
+    if (!g_task_compute_rc) goto bootloader;
+
     // when using airplane/wing mixer, servo/motor outputs are remapped
     if (mcfg.mixerConfiguration == MULTITYPE_AIRPLANE || mcfg.mixerConfiguration == MULTITYPE_FLYING_WING || mcfg.mixerConfiguration == MULTITYPE_CUSTOM_PLANE)
         pwm_params.airplane = true;
@@ -355,7 +358,6 @@ int main(void)
 #endif
 #endif
 
-    previousTime = (*pif_act_timer1us)();
     if (mcfg.mixerConfiguration == MULTITYPE_GIMBAL)
         calibratingA = CALIBRATING_ACC_CYCLES;
     calibratingG = CALIBRATING_GYRO_CYCLES;
@@ -372,9 +374,6 @@ int main(void)
     }
     if (!g_task_compute_imu) goto bootloader;
     g_task_compute_imu->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
-
-    g_task_compute_rc = pifTaskManager_Add(TM_PERIOD_MS, 20, taskComputeRc, NULL, TRUE);	        // 20ms - 50Hz
-    if (!g_task_compute_rc) goto bootloader;
 
 #ifdef MAG
     if (sensors(SENSOR_MAG)) {

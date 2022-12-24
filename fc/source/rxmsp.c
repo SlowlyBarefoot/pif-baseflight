@@ -11,7 +11,7 @@ void mspFrameRecieve(void)
 {
     failsafeCnt = 0; // clear FailSafe counter
 
-    g_task_compute_rc->immediate = TRUE;
+    if (!g_task_compute_rc->_running) g_task_compute_rc->immediate = TRUE;
 }
 
 void mspInit(rcReadRawDataPtr *callback)
