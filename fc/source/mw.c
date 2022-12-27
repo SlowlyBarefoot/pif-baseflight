@@ -922,7 +922,7 @@ uint16_t taskComputeImu(PifTask *p_task)
     switch (step) {
     case 0:
         // Measure loop rate just afer reading the sensors
-        cycleTime = pifTask_GetDeltaTime(p_task);
+        cycleTime = pifTask_GetDeltaTime(p_task, TRUE);
     
     case 1:
     case 2:
