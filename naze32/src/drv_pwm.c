@@ -337,7 +337,7 @@ static void pwmCallback(uint8_t port, uint16_t capture)
         pwmPorts[port].state = 0;
         pwmICConfig(timerHardware[port].tim, timerHardware[port].channel, TIM_ICPolarity_Rising);
 
-        if (port + 1 == numInputs) g_task_compute_rc->immediate = TRUE;
+        if (port + 1 == numInputs) pifTask_SetTrigger(g_task_compute_rc);
     }
 }
 
@@ -349,7 +349,7 @@ static void _evtRcReceive(PifRc* p_owner, uint16_t* p_channel, PifIssuerP p_issu
 	for (i = 0; i < p_owner->_channel_count; i++) {
 		captures[i] = p_channel[i];
 	}
-    if (!p_task->_running) p_task->immediate = TRUE;
+    pifTask_SetTrigger(p_task);
 }
 
 static void pwmWriteBrushed(uint8_t index, uint16_t value)

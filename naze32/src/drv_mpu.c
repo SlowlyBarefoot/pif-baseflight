@@ -357,12 +357,12 @@ static BOOL mpuGyroInit(PifImuSensorAlign align)
 
 static BOOL mpuAccRead(int16_t *acc_data)
 {
-    return pifImuSensor_ReadAccel(&imu_sensor, acc_data);
+    return pifImuSensor_ReadAccel2(&imu_sensor, acc_data);
 }
 
 static BOOL mpuGyroRead(int16_t *gyro_data)
 {
-    return pifImuSensor_ReadGyro(&imu_sensor, gyro_data);
+    return pifImuSensor_ReadGyro2(&imu_sensor, gyro_data);
 }
 
 static void mpu6050CheckRevision(void)

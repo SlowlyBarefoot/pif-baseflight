@@ -15,7 +15,7 @@ static const char* hw_names = "BMP280";
 
 bool bmp280Detect(sensorSet_t *p_sensor_set, void* p_param)
 {
-    extern void evtBaroRead(int32_t pressure, float temperature);
+    extern void evtBaroRead(float pressure, float temperature);
 
     (void)p_param;
 
@@ -29,8 +29,8 @@ bool bmp280Detect(sensorSet_t *p_sensor_set, void* p_param)
     // set oversampling + power mode (forced), and start sampling
     pifBmp280_SetOverSamplingRate(&bmp280, BMP280_OSRS_X8, BMP280_OSRS_X1);
 
-    if (!pifBmp280_AddTaskForReading(&bmp280, 25, evtBaroRead)) return false;   // 25ms : 40hz update rate (20hz LPF on acc)
-    bmp280.__p_task->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
+    if (!pifBmp280_AddTaskForReading(&bmp280, 25, evtBaroRead, TRUE)) return false;   // 25ms : 40hz update rate (20hz LPF on acc)
+    bmp280._p_task->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
 
     bmp280InitDone = true;
 

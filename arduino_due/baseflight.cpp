@@ -187,7 +187,7 @@ void setup()
 
     serialInit(UART_PORT_1, mcfg.serial_baudrate, UART_PORT_NONE);
 
-    g_task_compute_rc = pifTaskManager_Add(TM_NEED, 0, taskComputeRc, NULL, FALSE);
+    g_task_compute_rc = pifTaskManager_Add(TM_EXTERNAL_ORDER, 0, taskComputeRc, NULL, FALSE);
     if (!g_task_compute_rc) FAIL;
 
     // when using airplane/wing mixer, servo/motor outputs are remapped
@@ -301,13 +301,13 @@ void setup()
 
 #ifdef BARO
     if (sensors(SENSOR_BARO)) {
-        sensor_set.baro.p_b_task = pifTaskManager_Add(TM_NEED, 0, taskGetEstimatedAltitude, NULL, FALSE);
+        sensor_set.baro.p_b_task = pifTaskManager_Add(TM_EXTERNAL_ORDER, 0, taskGetEstimatedAltitude, NULL, FALSE);
         if (!sensor_set.baro.p_b_task) FAIL;
     }
 #endif
 
 #ifdef GPS
-    g_task_gps = pifTaskManager_Add(TM_NEED, 0, taskGpsNewData, NULL, FALSE);
+    g_task_gps = pifTaskManager_Add(TM_EXTERNAL_ORDER, 0, taskGpsNewData, NULL, FALSE);
     if (!g_task_gps) FAIL;
 #endif
 

@@ -56,7 +56,7 @@ BOOL hcsr04Init(uint16_t period, sonarDistanceFuncPtr func)
 {
 	if (!pifHcSr04_Init(&s_hcsr04, PIF_ID_AUTO)) return FALSE;
 	s_hcsr04.act_trigger = _actHcSr04Trigger;
-	s_hcsr04.evt_distance = _evtHcSr04Distance;
+	s_hcsr04.evt_read = _evtHcSr04Distance;
 	if (!pifHcSr04_StartTrigger(&s_hcsr04, period)) return FALSE;
 
 	funcSonarDistance = func;

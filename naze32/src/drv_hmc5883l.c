@@ -192,5 +192,5 @@ static BOOL hmc5883lRead(int16_t *magData)
 {
     // During calibration, magGain is 1.0, so the read returns normal non-calibrated values.
     // After calibration is done, magGain is set to calculated gain values.
-    return pifImuSensor_ReadMag(&imu_sensor, magData);
+    return pifImuSensor_ReadMag2(&imu_sensor, magData);
 }

@@ -34,7 +34,7 @@ static void _evtSbusReceive(PifRc* p_owner, uint16_t* channel, PifIssuerP p_issu
 	}
 
 	p_task = (PifTask*)p_issuer;
-	if (!p_task->_running) p_task->immediate = TRUE;
+	pifTask_SetTrigger(p_task);
 }
 
 BOOL sbusInit(int uart, rcReadRawDataPtr *callback)

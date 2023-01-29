@@ -928,14 +928,14 @@ uint16_t taskComputeImu(PifTask *p_task)
     case 2:
     case 3:
         step = computeIMU(step);
-		p_task->immediate = TRUE;
+        pifTask_SetTrigger(p_task);
 		break;
 
     case 4:
         // non IMU critical, temeperatur
         annexCode();
         step = 5;
-		p_task->immediate = TRUE;
+        pifTask_SetTrigger(p_task);
     	break;
 
     case 5:
@@ -1026,7 +1026,7 @@ uint16_t taskComputeImu(PifTask *p_task)
         }
 #endif
         step = 6;
-		p_task->immediate = TRUE;
+        pifTask_SetTrigger(p_task);
     	break;
 
     case 6:

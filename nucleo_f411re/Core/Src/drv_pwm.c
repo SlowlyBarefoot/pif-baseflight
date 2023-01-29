@@ -183,7 +183,7 @@ static void _evtRcReceive(PifRc* p_owner, uint16_t* p_channel, PifIssuerP p_issu
 	for (i = 0; i < p_owner->_channel_count; i++) {
 		captures[i] = p_channel[i];
 	}
-    if (!p_task->_running) p_task->immediate = TRUE;
+    pifTask_SetTrigger(p_task);
 }
 
 static void pwmWriteStandard(uint8_t index, uint16_t value)

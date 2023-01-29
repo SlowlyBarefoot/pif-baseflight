@@ -49,7 +49,7 @@ bool gy86Detect(sensorSet_t *p_sensor_set, void* p_param)
 {
 	PifGy86Config config;
 #ifdef BARO
-    extern void evtBaroRead(int32_t pressure, float temperature);
+    extern void evtBaroRead(float pressure, float temperature);
 #endif
 
     (void)p_param;
@@ -131,7 +131,7 @@ static BOOL mpuAccRead(int16_t *accData)
 {
 	int16_t data[3];
 
-    if (!pifImuSensor_ReadAccel(&imu_sensor, data)) return FALSE;
+    if (!pifImuSensor_ReadAccel2(&imu_sensor, data)) return FALSE;
     accData[0] = data[0];
     accData[1] = data[1];
     accData[2] = data[2];
@@ -148,7 +148,7 @@ static BOOL mpuGyroRead(int16_t *gyroData)
 {
 	int16_t data[3];
 
-	if (!pifImuSensor_ReadGyro(&imu_sensor, data)) return FALSE;
+	if (!pifImuSensor_ReadGyro2(&imu_sensor, data)) return FALSE;
 	gyroData[0] = data[0];
 	gyroData[1] = data[1];
 	gyroData[2] = data[2];
@@ -251,7 +251,7 @@ static BOOL hmc5883lRead(int16_t *magData)
 
 	// During calibration, magGain is 1.0, so the read returns normal non-calibrated values.
     // After calibration is done, magGain is set to calculated gain values.
-	if (!pifImuSensor_ReadMag(&imu_sensor, data)) return FALSE;
+	if (!pifImuSensor_ReadMag2(&imu_sensor, data)) return FALSE;
 	magData[0] = data[0];
 	magData[1] = data[1];
 	magData[2] = data[2];

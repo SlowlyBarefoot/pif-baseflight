@@ -44,7 +44,7 @@ static void _evtSpektrumReceive(PifRc* p_owner, uint16_t* channel, PifIssuerP p_
     }
 
 	p_task = (PifTask*)p_issuer;
-	if (!p_task->_running) p_task->immediate = TRUE;
+	pifTask_SetTrigger(p_task);
 }
 
 BOOL spektrumInit(int uart, rcReadRawDataPtr *callback)

@@ -28,7 +28,7 @@ static void _evtSumdReceive(PifRc* p_owner, uint16_t* channel, PifIssuerP p_issu
 		sumdChannelData[b] = channel[b];
 
 	p_task = (PifTask*)p_issuer;
-	if (!p_task->_running) p_task->immediate = TRUE;
+	pifTask_SetTrigger(p_task);
 }
 
 BOOL sumdInit(int uart, rcReadRawDataPtr *callback)

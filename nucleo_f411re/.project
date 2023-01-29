@@ -366,6 +366,11 @@
 			<locationURI>PARENT-2-PROJECT_LOC/pif/include/sensor/pif_ms5611.h</locationURI>
 		</link>
 		<link>
+			<name>Core/pif/include/sensor/pif_sensor_event.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/pif/include/sensor/pif_sensor_event.h</locationURI>
+		</link>
+		<link>
 			<name>Core/pif/include/sound/pif_buzzer.h</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/pif/include/sound/pif_buzzer.h</locationURI>

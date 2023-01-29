@@ -278,12 +278,12 @@ static void Baro_Common(void)
     baroHistIdx = indexplus1;
 }
 
-void evtBaroRead(int32_t pressure, float temperature)
+void evtBaroRead(float pressure, float temperature)
 {
     baroPressure = pressure;
     baroTemperature = temperature * 100;
     Baro_Common();
-    sensor_set.baro.p_b_task->immediate = TRUE;
+    pifTask_SetTrigger(sensor_set.baro.p_b_task);
 }
 #endif /* BARO */
 
@@ -404,7 +404,7 @@ uint16_t taskMagGetAdc(PifTask *p_task)
 
     // Read mag sensor
     if (!sensor_set.mag.read(magADC)) {
-    	p_task->immediate = TRUE;
+    	pifTask_SetTrigger(p_task);
     	return 0;
     }
 

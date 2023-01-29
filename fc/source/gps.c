@@ -173,7 +173,7 @@ static void _evtGpsReceive(PifGps *p_owner)
     GPS_HorizontalAcc = p_owner->_horizontal_acc;
     GPS_VerticalAcc = p_owner->_vertical_acc;
 
-    g_task_gps->immediate = TRUE;
+    pifTask_SetTrigger(g_task_gps);
     gpsData.receive = TRUE;
 }
 
