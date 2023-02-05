@@ -48,6 +48,7 @@ COMMON_SRC	 = buzzer.c \
 		   main.c \
 		   mixer.c \
 		   mw.c \
+		   link_driver.c \
 		   sensors.c \
 		   serial.c \
 		   rxmsp.c \

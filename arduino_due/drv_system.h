@@ -33,6 +33,9 @@ void systemInit(void);
 // Inv
 void actInvState(BOOL state);
 
+// storage
+PifStorage* storageInit();
+
 #ifdef __cplusplus
 }
 #endif

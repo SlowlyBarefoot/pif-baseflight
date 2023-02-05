@@ -71,6 +71,11 @@
 			<locationURI>PARENT-1-PROJECT_LOC/fc/include/cli.h</locationURI>
 		</link>
 		<link>
+			<name>Core/fc/include/link_driver.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/fc/include/link_driver.h</locationURI>
+		</link>
+		<link>
 			<name>Core/fc/include/mw.h</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/fc/include/mw.h</locationURI>
@@ -109,6 +114,11 @@
 			<name>Core/fc/source/imu.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/fc/source/imu.c</locationURI>
+		</link>
+		<link>
+			<name>Core/fc/source/link_driver.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/fc/source/link_driver.c</locationURI>
 		</link>
 		<link>
 			<name>Core/fc/source/mixer.c</name>

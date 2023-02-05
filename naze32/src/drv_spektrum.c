@@ -4,7 +4,7 @@
  */
 
 #include "board.h"
-#include "mw.h"
+#include "link_driver.h"
 
 #include "drv_gpio.h"
 #include "drv_system.h"
@@ -21,7 +21,7 @@ static uint16_t spekBindPin = 0;
  * 9 = DSMX 11ms / DSMX 22ms
  * 5 = DSM2 11ms 2048 / DSM2 22ms 1024
  */
-int spektrumBind(void)
+int spektrumBind(uint8_t spektrum_sat_on_flexport, uint8_t spektrum_sat_bind)
 {
     int i;
     gpio_config_t gpio;
@@ -42,7 +42,7 @@ int spektrumBind(void)
         return 0;
 #endif
 
-    if (mcfg.spektrum_sat_on_flexport) {
+    if (spektrum_sat_on_flexport) {
         // USART3, PB11
         spekBindPort = GPIOB;
         spekBindPin = Pin_11;
@@ -55,7 +55,7 @@ int spektrumBind(void)
     }
 
     // don't try to bind if: here after soft reset or bind flag is out of range
-    if (rccReadBkpDr() == BKP_SOFTRESET || mcfg.spektrum_sat_bind == 0 || mcfg.spektrum_sat_bind > 10)
+    if (rccReadBkpDr() == BKP_SOFTRESET || spektrum_sat_bind == 0 || spektrum_sat_bind > 10)
         return 0;
 
     gpio.speed = Speed_2MHz;
@@ -67,7 +67,7 @@ int spektrumBind(void)
     // Bind window is around 20-140ms after powerup
     pif_Delay1ms(60);
 
-    for (i = 0; i < mcfg.spektrum_sat_bind; i++) {
+    for (i = 0; i < spektrum_sat_bind; i++) {
         // RX line, drive low for 120us
         digitalLo(spekBindPort, spekBindPin);
         pif_Delay1us(120);
@@ -75,14 +75,5 @@ int spektrumBind(void)
         digitalHi(spekBindPort, spekBindPin);
         pif_Delay1us(120);
     }
-
-#ifndef HARDWARE_BIND_PLUG
-    // If we came here as a result of hard  reset (power up, with mcfg.spektrum_sat_bind set), then reset it back to zero and write config
-    // Don't reset if hardware bind plug is present
-    if (rccReadBkpDr() != BKP_SOFTRESET) {
-        mcfg.spektrum_sat_bind = 0;
-        writeEEPROM(1, true);
-    }
-#endif
     return spekUart;
 }

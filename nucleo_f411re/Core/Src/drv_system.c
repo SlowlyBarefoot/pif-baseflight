@@ -5,7 +5,7 @@
 
 #include "main.h"
 #include "board.h"
-#include "mw.h"
+#include "link_driver.h"
 
 #include "drv_hcsr04.h"
 #include "drv_pwm.h"
@@ -138,6 +138,8 @@ void actInvState(BOOL state)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
+	extern void hcsr04Echo();
+
     switch (GPIO_Pin) {
     case RC_PPM_Pin:
     	pwmReadRc();

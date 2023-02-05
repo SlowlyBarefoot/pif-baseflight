@@ -1,5 +1,5 @@
 #include "board.h"
-#include "mw.h"
+#include "link_driver.h"
 
 #include "drv_i2c.h"
 
@@ -33,8 +33,8 @@ static PifImuSensorAlign gyroAlign = IMUS_ALIGN_CW0_DEG;
 
 static const char* hw_names = "L3G4200D";
 
-static BOOL l3g4200dInit(PifImuSensorAlign align);
-static BOOL l3g4200dRead(int16_t *gyro_data);
+static BOOL l3g4200dInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
+static BOOL l3g4200dRead(sensorSet_t *p_sensor_set, int16_t *gyro_data);
 
 bool l3g4200dDetect(sensorSet_t *p_sensor_set, void* p_param)
 {
@@ -75,9 +75,11 @@ bool l3g4200dDetect(sensorSet_t *p_sensor_set, void* p_param)
     return true;
 }
 
-static BOOL l3g4200dInit(PifImuSensorAlign align)
+static BOOL l3g4200dInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
 {
     bool ack;
+
+    (void)p_sensor_set;
 
     pif_Delay1ms(100);
 
@@ -93,10 +95,12 @@ static BOOL l3g4200dInit(PifImuSensorAlign align)
 }
 
 // Read 3 gyro values into user-provided buffer. No overrun checking is done.
-static BOOL l3g4200dRead(int16_t *gyro_data)
+static BOOL l3g4200dRead(sensorSet_t *p_sensor_set, int16_t *gyro_data)
 {
     uint8_t buf[6];
     int16_t data[3];
+
+    (void)p_sensor_set;
 
     i2cRead(L3G4200D_ADDRESS, L3G4200D_AUTOINCR | L3G4200D_GYRO_OUT, 6, buf);
     data[X] = (int16_t)((buf[0] << 8) | buf[1]) / 4;

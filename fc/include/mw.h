@@ -5,12 +5,7 @@
 
 #pragma once
 
-#include "core/pif_comm.h"
-#include "core/pif_i2c.h"
-#include "core/pif_timer.h"
-#include "sensor/pif_imu_sensor.h"
-#include "storage/pif_storage.h"
-
+#include "link_driver.h"
 
 #ifndef M_PI
 #define M_PI       3.14159265358979323846f
@@ -30,23 +25,6 @@
 #define ALT  2
 
 #define RC_CHANS    (18)
-
-#define PULSE_1MS   (1000)      // 1ms pulse width
-#define PULSE_MIN   (750)       // minimum PWM pulse width which is considered valid
-#define PULSE_MAX   (2250)      // maximum PWM pulse width which is considered valid
-
-#define PIF_ID_UART(N)              (0x100 + (N))   // N : 0=UART1, 1=UART2, 2=UART3
-#define PIF_ID_UART_2_IDX(N)        ((N) - 0x100)   // N : 0x100=UART1, 0x101=UART2, 0x102=UART3
-
-#define PIF_ID_MSP(N)               (0x110 + (N))   // N : 0=main port, 1=flex port
-#define PIF_ID_MSP_2_IDX(N)         ((N) - 0x110)   // N : 0x110=main port, 0x111=flex port
-
-#define PIF_ID_LED(N)               (0x120 + (N))   // N : 0=LED0, 1=LED1
-#define PIF_ID_LED_2_IDX(N)         ((N) - 0x120)   // N : 0x120=LED0, 0x121=LED1
-
-#define PIF_ID_BUZZER               0x130
-
-#define DISALLOW_YIELD_ID_I2C       1
 
 
 typedef enum {
@@ -79,13 +57,6 @@ typedef enum {
     FEATURE_SYNCPWM = 1 << 16,
     FEATURE_FASTPWM = 1 << 17,
 } AvailableFeatures;
-
-typedef enum {
-	UART_PORT_NONE = 0,
-	UART_PORT_1,
-	UART_PORT_2,
-	UART_PORT_3,
-} UartPort;
 
 typedef enum {
     SERIALRX_SPEKTRUM1024 = 0,
@@ -127,20 +98,6 @@ typedef enum {
     TELEMETRY_PORT_UART_2,
     TELEMETRY_PORT_MAX = TELEMETRY_PORT_UART_2
 } TelemetryPort;
-
-typedef enum {
-    X = 0,
-    Y,
-    Z
-} sensor_axis_e;
-
-typedef enum {
-    ADC_BATTERY = 0,
-    ADC_EXTERNAL_PAD = 1,
-    ADC_EXTERNAL_CURRENT = 2,
-    ADC_RSSI = 3,
-    ADC_CHANNEL_MAX = 4
-} AdcChannel;
 
 // Serial GPS only variables
 // navigation mode
@@ -194,18 +151,6 @@ typedef enum FlapsType {
     FLAPS_FLAPERONS_INVERTED_ENABLED,
     FLAPS_TYPE_MAX = FLAPS_FLAPERONS_INVERTED_ENABLED
 } FlapsType;
-
-/*********** RC alias *****************/
-enum {
-    ROLL = 0,
-    PITCH,
-    YAW,
-    THROTTLE,
-    AUX1,
-    AUX2,
-    AUX3,
-    AUX4
-};
 
 enum {
     PIDROLL,
@@ -522,21 +467,6 @@ typedef struct master_t {
     uint8_t chk;                            // XOR checksum
 } master_t;
 
-// Serial Port
-typedef enum portMode_t {
-    MODE_RX = 1 << 0,
-    MODE_TX = 1 << 1,
-    MODE_RXTX = MODE_RX | MODE_TX,
-    MODE_SBUS = 1 << 2
-} portMode_t;
-
-typedef struct serialPort {
-    portMode_t mode;
-    PifComm comm;
-
-    void* p_param;
-} serialPort_t;
-
 // Core runtime settings
 typedef struct core_t {
     serialPort_t *mainport;
@@ -577,66 +507,13 @@ typedef struct flags_t {
 typedef void (*featureDefaultFuncPtr)(void);
 extern featureDefaultFuncPtr g_featureDefault;
 
-typedef BOOL (*sensorInitFuncPtr)(PifImuSensorAlign align);// sensor init prototype
-typedef BOOL (*sensorReadFuncPtr)(int16_t *data);          // sensor read and align prototype
 typedef uint16_t (*rcReadRawDataPtr)(uint8_t chan);        // used by receiver driver to return channel data
 typedef void (*pidControllerFuncPtr)(void);                // pid controller function prototype
-
-typedef struct sensor_t {
-    const char* hardware;
-    sensorInitFuncPtr init;                                 // initialize function
-    sensorReadFuncPtr read;                                 // read 3 axis data function
-    union {
-        struct {											// gyro
-			sensorReadFuncPtr temperature;                  // read temperature if available
-			uint16_t lpf;
-			float scale;                                    // scalefactor (currently used for gyro only, todo for accel)
-    	};
-    	struct {											// baro
-    	    PifTask* p_b_task;
-    	};
-    	struct {											// mag
-    	    PifTask* p_m_task;
-    		float declination;       						// calculated at startup from config
-    	};
-    };
-} sensor_t;
-
-typedef struct sensorSet_t {
-	sensor_t gyro;
-	sensor_t acc;
-	sensor_t baro;
-	sensor_t mag;
-} sensorSet_t;
-
-typedef bool (*sensorDetectFuncPtr)(sensorSet_t *p_sensor_set, void* p_param);
-
-typedef struct sensor_detect_t {
-	sensorDetectFuncPtr p_func;
-	void* p_param;
-} sensorDetect_t;
-
-// sonar
-typedef enum {
-    SF_NONE 	    = 0,
-    SF_AVERAGE	    = 1,
-    SF_NOISE_CANCEL	= 2
-} sonar_filter_t;
-
-typedef float (*sonarDistanceFuncPtr)(int32_t distance);						// 반환값은 기온 (도)
-typedef BOOL (*sonarInitFuncPtr)(uint16_t period, sonarDistanceFuncPtr func);	// period unit : ms
 
 extern uint32_t g_crystal_clock;
 extern uint32_t g_core_clock;
 
 extern uint32_t g_unique_id[3];
-
-extern PifI2cPort g_i2c_port;
-extern PifTimerManager g_timer_1ms;
-extern PifTask* g_task_compute_rc;
-extern PifTask* g_task_compute_imu;
-extern PifTask* g_task_gps;
-extern PifImuSensor imu_sensor;
 
 extern int16_t gyroZero[3];
 extern int16_t gyroData[3];
@@ -649,7 +526,6 @@ extern int16_t failsafeCnt;
 extern int16_t debug[4];
 extern int16_t gyroADC[3], accADC[3], accSmooth[3], magADC[3];
 extern int32_t accSum[3];
-extern uint16_t acc_1G;
 extern uint32_t accTimeSum;
 extern int accSumCount;
 extern uint16_t cycleTime;
@@ -761,7 +637,7 @@ void serialInit(uint8_t port, uint32_t baudrate, uint8_t flexport);
 void serialCom(void);
 
 // Config
-bool initEEPROM(void);
+bool initEEPROM(PifStorage* p_sto);
 void parseRcChannels(const char *input);
 void activateConfig(void);
 void loadAndActivateConfig(void);
@@ -778,15 +654,12 @@ void featureClear(uint32_t mask);
 void featureClearAll(void);
 uint32_t featureMask(void);
 
-// storage
-PifStorage* storageInit();
-
 // receiver read function
 uint16_t pwmReadRawRC(uint8_t chan);
 
 // spektrum
 BOOL spektrumInit(int uart, rcReadRawDataPtr *callback);
-int spektrumBind(void);
+int spektrumBind(uint8_t spektrum_sat_on_flexport, uint8_t spektrum_sat_bind);
 
 // sbus
 BOOL sbusInit(int uart, rcReadRawDataPtr *callback);
@@ -806,7 +679,7 @@ void systemBeep(bool onoff);
 
 // cli
 BOOL cliInit(PifComm* p_comm);
-__attribute__ ((weak)) void cliStatusCallback();
+void cliStatusCallback();
 
 // gps
 void gpsInit(uint8_t port, uint8_t baudrate);
@@ -821,39 +694,6 @@ void GPS_set_next_wp(int32_t *lat, int32_t *lon);
 int32_t wrap_18000(int32_t error);
 void fw_nav(void);
 void fw_FlyTo(void);
-
-// bootloader/IAP
-void systemReset(bool toBootloader);
-
-// failure
-void failureMode(uint8_t mode);
-
-// led
-void actLed0State(BOOL state);
-void actLed0Toggle();
-void actLed1State(BOOL state);
-void actLed1Toggle();
-
-void actInvState(BOOL state);
-
-// buzzer
-void actBuzzerAction(PifId id, BOOL action);
-
-// adc sensor
-uint16_t actGetAdcChannel(uint8_t channel);
-float actGetBatteryVoltage();
-uint32_t actGetBatteryCurrent();
-
-// pwm
-void actPwmWriteMotor(uint8_t index, uint16_t value);
-void actPwmWriteServo(uint8_t index, uint16_t value);
-uint16_t actPwmRead(uint8_t channel);
-
-// uart
-serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode);
-BOOL serialSetBaudRate(serialPort_t *instance, uint32_t baudRate);
-BOOL serialStartReceiveFunc(PifComm* p_comm);
-BOOL serialStopReceiveFunc(PifComm* p_comm);
 
 #ifdef __cplusplus
 }

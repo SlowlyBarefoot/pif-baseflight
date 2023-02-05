@@ -12,4 +12,8 @@ typedef enum mpu_hardware_e {
     MPU_65xx_SPI,   // Naze32SP
 } mpu_hardware_e;
 
+typedef struct drv_mpu_config_t {
+    uint32_t crystal_clock;
+} drv_mpu_config_t;
+
 bool mpuDetect(sensorSet_t *p_sensor_set, void* p_param);

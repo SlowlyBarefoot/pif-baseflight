@@ -37,8 +37,9 @@ const char* g_board_name;
 core_t core;
 int hw_revision = 0;
 
+static drv_mpu_config_t mpu_params;
 static sensorDetect_t gyro_detect[] = { 
-    { (sensorDetectFuncPtr)mpuDetect, NULL }, 
+    { (sensorDetectFuncPtr)mpuDetect, (void*)&mpu_params }, 
 #ifndef CJMCU
     { (sensorDetectFuncPtr)l3g4200dDetect, NULL },
 #endif
@@ -149,7 +150,7 @@ int main(void)
 
     g_featureDefault = featureDefault;
 
-    if (!initEEPROM()) goto bootloader;
+    if (!initEEPROM(storageInit())) goto bootloader;
     if (!checkFirstTime(false)) goto bootloader;
     readEEPROM();
 
@@ -174,7 +175,17 @@ int main(void)
                 // Spektrum satellite binding if enabled on startup.
                 // Must be called before that 100ms sleep so that we don't lose satellite's binding window after startup.
                 // The rest of Spektrum initialization will happen later - via spektrumInit()
-                spekUart = spektrumBind();
+                spekUart = spektrumBind(mcfg.spektrum_sat_on_flexport, mcfg.spektrum_sat_bind);
+#ifndef HARDWARE_BIND_PLUG
+                if (spekUart) {
+                    // If we came here as a result of hard  reset (power up, with mcfg.spektrum_sat_bind set), then reset it back to zero and write config
+                    // Don't reset if hardware bind plug is present
+                    if (rccReadBkpDr() != BKP_SOFTRESET) {
+                        mcfg.spektrum_sat_bind = 0;
+                        writeEEPROM(1, true);
+                    }
+                }
+#endif
                 break;
         }
     }
@@ -220,6 +231,7 @@ int main(void)
     initBoardAlignment();
 
     // drop out any sensors that don't seem to work, init all the others. halt if gyro is dead.
+    mpu_params.crystal_clock = g_crystal_clock;
     sensorsOK = sensorsAutodetect(gyro_detect, acc_detect, baro_detect, mag_detect);
     g_board_name = hwNames[hw_revision];
 
@@ -364,7 +376,7 @@ int main(void)
     calibratingB = CALIBRATING_BARO_CYCLES;             // 10 seconds init_delay + 200 * 25 ms = 15 seconds before ground pressure settles
     f.SMALL_ANGLE = 1;
 
-    if (!pifTaskManager_Add(TM_PERIOD_MS, 1, taskLoop, NULL, TRUE)) goto bootloader;                // 1ms
+    if (!pifTaskManager_Add(TM_PERIOD_MS, 50, taskLoop, NULL, TRUE)) goto bootloader;               // 50ms
 
     if (mcfg.looptime) {
         g_task_compute_imu = pifTaskManager_Add(TM_PERIOD_US, mcfg.looptime, taskComputeImu, NULL, TRUE);
@@ -377,16 +389,16 @@ int main(void)
 
 #ifdef MAG
     if (sensors(SENSOR_MAG)) {
-        sensor_set.mag.p_m_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskMagGetAdc, NULL, TRUE); // 100ms
-        if (!sensor_set.mag.p_m_task) goto bootloader;
-        sensor_set.mag.p_m_task->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
+        sensor_set.mag.p_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskMagGetAdc, NULL, TRUE); // 100ms
+        if (!sensor_set.mag.p_task) goto bootloader;
+        sensor_set.mag.p_task->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
     }
 #endif
 
 #ifdef BARO
     if (sensors(SENSOR_BARO)) {
-        sensor_set.baro.p_b_task = pifTaskManager_Add(TM_EXTERNAL_ORDER, 0, taskGetEstimatedAltitude, NULL, FALSE);
-        if (!sensor_set.baro.p_b_task) goto bootloader;
+        sensor_set.baro.p_task = pifTaskManager_Add(TM_EXTERNAL_ORDER, 0, taskGetEstimatedAltitude, NULL, FALSE);
+        if (!sensor_set.baro.p_task) goto bootloader;
     }
 #endif
 

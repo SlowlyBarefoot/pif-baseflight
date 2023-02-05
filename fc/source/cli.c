@@ -1256,7 +1256,7 @@ BOOL cliInit(PifComm* p_comm)
     return TRUE;
 }
 
-__attribute__ ((weak)) void cliStatusCallback()
+PIF_WEAK void cliStatusCallback()
 {
 
 }

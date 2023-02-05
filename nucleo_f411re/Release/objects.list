@@ -20,6 +20,7 @@
 "./Core/fc/source/gps.o"
 "./Core/fc/source/ibus.o"
 "./Core/fc/source/imu.o"
+"./Core/fc/source/link_driver.o"
 "./Core/fc/source/mixer.o"
 "./Core/fc/source/mw.o"
 "./Core/fc/source/rxmsp.o"

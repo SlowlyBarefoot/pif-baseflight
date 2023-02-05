@@ -4,7 +4,7 @@
  */
 
 #include "board.h"
-#include "mw.h"
+#include "link_driver.h"
 
 #include "drv_gpio.h"
 #include "drv_hmc5883l.h"
@@ -80,13 +80,14 @@ static PifHmc5883 hmc5883;
 
 static const char* hw_names = "HMC5883L";
 
-static BOOL hmc5883lRead(int16_t *magData);
+static BOOL hmc5883lInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
+static BOOL hmc5883lRead(sensorSet_t *p_sensor_set, int16_t *magData);
 
 bool hmc5883lDetect(sensorSet_t *p_sensor_set, void* p_param)
 {
     (void)p_param;
 
-    if (!pifHmc5883_Init(&hmc5883, PIF_ID_AUTO, &g_i2c_port, &imu_sensor)) return false;
+    if (!pifHmc5883_Init(&hmc5883, PIF_ID_AUTO, &g_i2c_port, &p_sensor_set->imu_sensor)) return false;
 
     p_sensor_set->mag.hardware = hw_names;
     p_sensor_set->mag.init = hmc5883lInit;
@@ -94,7 +95,7 @@ bool hmc5883lDetect(sensorSet_t *p_sensor_set, void* p_param)
     return true;
 }
 
-BOOL hmc5883lInit(PifImuSensorAlign align)
+static BOOL hmc5883lInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
 {
     gpio_config_t gpio;
     int16_t adc[3];
@@ -103,7 +104,7 @@ BOOL hmc5883lInit(PifImuSensorAlign align)
     bool bret = true;           // Error indicator
     PifHmc5883ConfigA config_a;
 
-    pifImuSensor_SetMagAlign(&imu_sensor, align);
+    pifImuSensor_SetMagAlign(&p_sensor_set->imu_sensor, align);
 
     gpio.speed = Speed_2MHz;
     gpio.mode = Mode_IN_FLOATING;
@@ -127,12 +128,12 @@ BOOL hmc5883lInit(PifImuSensorAlign align)
     // The new gain setting is effective from the second measurement and on.
     pifHmc5883_SetGain(&hmc5883, HMC5883_GAIN_2_5GA); // Set the Gain to 2.5Ga (7:5->011)
     pif_Delay1ms(100);
-    hmc5883lRead(adc);
+    hmc5883lRead(p_sensor_set, adc);
 
     for (i = 0; i < 10; i++) {  // Collect 10 samples
         pifI2cDevice_WriteRegByte(hmc5883._p_i2c, HMC5883_REG_MODE, HMC5883_MODE_SINGLE);
         pif_Delay1ms(50);
-        hmc5883lRead(adc);       // Get the raw values in case the scales have already been changed.
+        hmc5883lRead(p_sensor_set, adc);       // Get the raw values in case the scales have already been changed.
 
         // Since the measurements are noisy, they should be averaged rather than taking the max.
         xyz_total[X] += adc[X];
@@ -153,7 +154,7 @@ BOOL hmc5883lInit(PifImuSensorAlign align)
     for (i = 0; i < 10; i++) {
         pifI2cDevice_WriteRegByte(hmc5883._p_i2c, HMC5883_REG_MODE, HMC5883_MODE_SINGLE);
         pif_Delay1ms(50);
-        hmc5883lRead(adc);               // Get the raw values in case the scales have already been changed.
+        hmc5883lRead(p_sensor_set, adc);               // Get the raw values in case the scales have already been changed.
 
         // Since the measurements are noisy, they should be averaged.
         xyz_total[X] -= adc[X];
@@ -188,9 +189,9 @@ BOOL hmc5883lInit(PifImuSensorAlign align)
     return TRUE;
 }
 
-static BOOL hmc5883lRead(int16_t *magData)
+static BOOL hmc5883lRead(sensorSet_t *p_sensor_set, int16_t *magData)
 {
     // During calibration, magGain is 1.0, so the read returns normal non-calibrated values.
     // After calibration is done, magGain is set to calculated gain values.
-    return pifImuSensor_ReadMag2(&imu_sensor, magData);
+    return pifImuSensor_ReadMag2(&p_sensor_set->imu_sensor, magData);
 }

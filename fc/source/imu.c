@@ -42,8 +42,8 @@ static void getEstimatedAttitude(void);
 
 void imuInit(void)
 {
-    smallAngle = lrintf(acc_1G * cosf(RAD * cfg.small_angle));
-    accVelScale = 9.80665f / acc_1G / 10000.0f;
+    smallAngle = lrintf(sensor_set.acc.acc_1G * cosf(RAD * cfg.small_angle));
+    accVelScale = 9.80665f / sensor_set.acc.acc_1G / 10000.0f;
     throttleAngleScale = (1800.0f / M_PI) * (900.0f / cfg.throttle_correction_angle);
 
     fc_acc = 0.5f / (M_PI * cfg.accz_lpf_cutoff); // calculate RC time constant used in the accZ lpf
@@ -212,7 +212,7 @@ void acc_calc(uint32_t deltaT)
         }
         accel_ned.V.Z -= accZoffset / 64;  // compensate for gravitation on z-axis
     } else
-        accel_ned.V.Z -= acc_1G;
+        accel_ned.V.Z -= sensor_set.acc.acc_1G;
 
     accz_smooth = accz_smooth + (dT / (fc_acc + dT)) * (accel_ned.V.Z - accz_smooth); // low pass filter
 
@@ -280,7 +280,7 @@ static void getEstimatedAttitude(void)
         }
         accMag += (int32_t)accSmooth[axis] * accSmooth[axis];
     }
-    accMag = accMag * 100 / ((int32_t)acc_1G * acc_1G);
+    accMag = accMag * 100 / ((int32_t)sensor_set.acc.acc_1G * sensor_set.acc.acc_1G);
 
     rotateV(&EstG.V, deltaGyroAngle);
 

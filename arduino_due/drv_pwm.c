@@ -3,7 +3,7 @@
  * Licensed under GPL V3 or modified DCL - see https://github.com/multiwii/baseflight/blob/master/README.md
  */
 #include "board.h"
-#include "mw.h"
+#include "link_driver.h"
 
 #include "drv_pwm.h"
 

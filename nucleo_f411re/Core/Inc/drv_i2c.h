@@ -10,5 +10,4 @@
 //#define USE_I2C_INTERRUPT
 #define USE_I2C_DMA
 
-PifI2cReturn actI2cWrite(uint8_t addr_, uint32_t iaddr, uint8_t isize, uint8_t* p_data, uint16_t size);
-PifI2cReturn actI2cRead(uint8_t addr_, uint32_t iaddr, uint8_t isize, uint8_t* p_data, uint16_t size);
+BOOL i2cInit();

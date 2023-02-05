@@ -3,7 +3,7 @@
  * Licensed under GPL V3 or modified DCL - see https://github.com/multiwii/baseflight/blob/master/README.md
  */
 #include "board.h"
-#include "mw.h"
+#include "link_driver.h"
 
 #include "drv_gpio.h"
 #include "drv_i2c.h"
@@ -57,13 +57,12 @@
 #define MMA8452_CTRL_REG1_LNOISE        0x04
 #define MMA8452_CTRL_REG1_ACTIVE        0x01
 
-extern uint16_t acc_1G;
 static PifImuSensorAlign accAlign = IMUS_ALIGN_CW90_DEG;
 
 static const char* hw_names = "MMA8452";
 
-static BOOL mma8452Init(PifImuSensorAlign align);
-static BOOL mma8452Read(int16_t *accelData);
+static BOOL mma8452Init(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
+static BOOL mma8452Read(sensorSet_t *p_sensor_set, int16_t *accelData);
 
 bool mma8452Detect(sensorSet_t *p_sensor_set, void* p_param)
 {
@@ -86,9 +85,11 @@ bool mma8452Detect(sensorSet_t *p_sensor_set, void* p_param)
     return true;
 }
 
-static BOOL mma8452Init(PifImuSensorAlign align)
+static BOOL mma8452Init(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
 {
     gpio_config_t gpio;
+
+    (void)p_sensor_set;
 
     // PA5 - ACC_INT2 output on rev3/4 hardware
     gpio.pin = Pin_5;
@@ -105,17 +106,19 @@ static BOOL mma8452Init(PifImuSensorAlign align)
     i2cWrite(MMA8452_ADDRESS, MMA8452_CTRL_REG5, 0); // DRDY routed to INT2
     i2cWrite(MMA8452_ADDRESS, MMA8452_CTRL_REG1, MMA8452_CTRL_REG1_LNOISE | MMA8452_CTRL_REG1_ACTIVE); // Turn on measurements, low noise at max scale mode, Data Rate 800Hz. LNoise mode makes range +-4G.
 
-    acc_1G = 256;
+    p_sensor_set->acc.acc_1G = 256;
 
     if (align > 0)
         accAlign = align;
     return TRUE;
 }
 
-static BOOL mma8452Read(int16_t *accelData)
+static BOOL mma8452Read(sensorSet_t *p_sensor_set, int16_t *accelData)
 {
     uint8_t buf[6];
     int16_t data[3];
+
+    (void)p_sensor_set;
 
     i2cRead(MMA8452_ADDRESS, MMA8452_OUT_X_MSB, 6, buf);
     data[0] = ((int16_t)((buf[0] << 8) | buf[1]) >> 2) / 4;

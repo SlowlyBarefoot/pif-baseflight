@@ -4,7 +4,7 @@
  */
 
 #include "board.h"
-#include "mw.h"
+#include "link_driver.h"
 
 #include "drv_ak8975.h"
 #include "drv_i2c.h"
@@ -22,7 +22,8 @@ static PifImuSensorAlign magAlign = IMUS_ALIGN_CW180_DEG;
 
 static const char* hw_names = "AK8975";
 
-static BOOL ak8975Read(int16_t *magData);
+static BOOL ak8975Init(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
+static BOOL ak8975Read(sensorSet_t *p_sensor_set, int16_t *magData);
 
 bool ak8975detect(sensorSet_t *p_sensor_set, void* p_param)
 {
@@ -42,8 +43,10 @@ bool ak8975detect(sensorSet_t *p_sensor_set, void* p_param)
     return true;
 }
 
-BOOL ak8975Init(PifImuSensorAlign align)
+static BOOL ak8975Init(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
 {
+    (void)p_sensor_set;
+
     if (align > 0)
         magAlign = align;
 
@@ -51,10 +54,12 @@ BOOL ak8975Init(PifImuSensorAlign align)
     return TRUE;
 }
 
-static BOOL ak8975Read(int16_t *magData)
+static BOOL ak8975Read(sensorSet_t *p_sensor_set, int16_t *magData)
 {
     uint8_t buf[6];
     int16_t mag[3];
+
+    (void)p_sensor_set;
 
     i2cRead(AK8975_MAG_I2C_ADDRESS, AK8975_MAG_DATA_ADDRESS, 6, buf);
     // align sensors to match MPU6050:

@@ -4,8 +4,9 @@
  */
 #include "main.h"
 #include "board.h"
-#include "mw.h"
+#include "link_driver.h"
 #include "drv_i2c.h"
+#include "drv_system.h"
 
 
 #ifdef USE_I2C_POLLING
@@ -111,3 +112,11 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
 }
 
 #endif
+
+BOOL i2cInit()
+{
+    if (!pifI2cPort_Init(&g_i2c_port, PIF_ID_AUTO, 5, EEPROM_PAGE_SIZE)) return FALSE;
+    g_i2c_port.act_read = actI2cRead;
+    g_i2c_port.act_write = actI2cWrite;
+    return TRUE;
+}

@@ -47,9 +47,6 @@ enum {
 };
 
 bool pwmInit(drv_pwm_config_t *init); // returns whether driver is asking to calibrate throttle or not
-void pwmWriteMotor(uint8_t index, uint16_t value);
-void pwmWriteServo(uint8_t index, uint16_t value);
-uint16_t pwmRead(uint8_t channel);
 void pwmReadRc();
 
 // void pwmWrite(uint8_t channel, uint16_t value);

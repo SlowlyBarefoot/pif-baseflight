@@ -3,7 +3,7 @@
  * Licensed under GPL V3 or modified DCL - see https://github.com/multiwii/baseflight/blob/master/README.md
  */
 #include "board.h"
-#include "mw.h"
+#include "link_driver.h"
 
 #include "sensor/pif_bmp280.h"
 
@@ -15,8 +15,6 @@ static const char* hw_names = "BMP280";
 
 bool bmp280Detect(sensorSet_t *p_sensor_set, void* p_param)
 {
-    extern void evtBaroRead(float pressure, float temperature);
-
     (void)p_param;
 
     if (bmp280InitDone)
@@ -29,7 +27,7 @@ bool bmp280Detect(sensorSet_t *p_sensor_set, void* p_param)
     // set oversampling + power mode (forced), and start sampling
     pifBmp280_SetOverSamplingRate(&bmp280, BMP280_OSRS_X8, BMP280_OSRS_X1);
 
-    if (!pifBmp280_AddTaskForReading(&bmp280, 25, evtBaroRead, TRUE)) return false;   // 25ms : 40hz update rate (20hz LPF on acc)
+    if (!pifBmp280_AddTaskForReading(&bmp280, 25, p_sensor_set->baro.evt_read, TRUE)) return false;   // 25ms : 40hz update rate (20hz LPF on acc)
     bmp280._p_task->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
 
     bmp280InitDone = true;

@@ -1,5 +1,5 @@
 #include "board.h"
-#include "mw.h"
+#include "link_driver.h"
 
 #include "drv_bma280.h"
 #include "drv_i2c.h"
@@ -11,10 +11,8 @@
 #define BMA280_PMU_BW      0x10
 #define BMA280_PMU_RANGE   0x0F
 
-extern uint16_t acc_1G;
-
-static BOOL bma280Init(PifImuSensorAlign align);
-static BOOL bma280Read(int16_t *accelData);
+static BOOL bma280Init(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
+static BOOL bma280Read(sensorSet_t *p_sensor_set, int16_t *accelData);
 
 static PifImuSensorAlign accAlign = IMUS_ALIGN_CW0_DEG;
 
@@ -37,22 +35,24 @@ bool bma280Detect(sensorSet_t *p_sensor_set, void* p_param)
     return true;
 }
 
-static BOOL bma280Init(PifImuSensorAlign align)
+static BOOL bma280Init(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
 {
     i2cWrite(BMA280_ADDRESS, BMA280_PMU_RANGE, 0x08); // +-8g range
     i2cWrite(BMA280_ADDRESS, BMA280_PMU_BW, 0x0E); // 500Hz BW
 
-    acc_1G = 512 * 8;
+    p_sensor_set->acc.acc_1G = 512 * 8;
 
     if (align > 0)
         accAlign = align;
     return TRUE;
 }
 
-static BOOL bma280Read(int16_t *accelData)
+static BOOL bma280Read(sensorSet_t *p_sensor_set, int16_t *accelData)
 {
     uint8_t buf[6];
     int16_t data[3];
+
+    (void)p_sensor_set;
 
     i2cRead(BMA280_ADDRESS, BMA280_ACC_X_LSB, 6, buf);
 

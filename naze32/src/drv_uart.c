@@ -6,7 +6,7 @@
  * Copyright 2011  Bill Nesbitt
 */
 #include "board.h"
-#include "mw.h"
+#include "link_driver.h"
 
 #include "drv_gpio.h"
 #include "drv_uart.h"

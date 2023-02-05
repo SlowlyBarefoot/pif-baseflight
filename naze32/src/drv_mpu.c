@@ -4,7 +4,7 @@
  */
 
 #include "board.h"
-#include "mw.h"
+#include "link_driver.h"
 
 #include "drv_gpio.h"
 #include "drv_i2c.h"
@@ -54,16 +54,16 @@ typedef bool (*mpuReadRegPtr)(uint8_t reg, uint8_t *data, int length);
 typedef bool (*mpuWriteRegPtr)(uint8_t reg, uint8_t data);
 typedef void (*mpuInitPtr)(sensorSet_t *p_sensor_set);
 // General forward declarations
-static void mpu6050CheckRevision(void);
+static void mpu6050CheckRevision(sensorSet_t *p_sensor_set);
 #ifdef PROD_DEBUG
 static void mpu6050SelfTest(void);
 #endif
-static BOOL dummyInit(PifImuSensorAlign align);
-static BOOL dummyRead(int16_t *data);
-static BOOL mpuAccInit(PifImuSensorAlign align);
-static BOOL mpuAccRead(int16_t *acc_data);
-static BOOL mpuGyroInit(PifImuSensorAlign align);
-static BOOL mpuGyroRead(int16_t *gyro_data);
+static BOOL dummyInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
+static BOOL dummyRead(sensorSet_t *p_sensor_set, int16_t *data);
+static BOOL mpuAccInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
+static BOOL mpuAccRead(sensorSet_t *p_sensor_set, int16_t *acc_data);
+static BOOL mpuGyroInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
+static BOOL mpuGyroRead(sensorSet_t *p_sensor_set, int16_t *gyro_data);
 
 typedef struct mpu_access_t {
     mpuReadRegPtr read;
@@ -77,8 +77,6 @@ typedef struct mpu_access_t {
     };
 } mpu_access_t;
 
-// Needed for MPU6050 half-scale acc bug
-extern uint16_t acc_1G;
 // Hardware access function
 static mpu_access_t mpu;
 
@@ -92,10 +90,8 @@ bool mpuDetect(sensorSet_t *p_sensor_set, void* p_param)
     mpu_hardware_e hw = MPU_NONE;
     gpio_config_t gpio;
 
-    (void)p_param;
-
     // Set acc_1G. Modified once by mpu6050CheckRevision for old (hopefully nonexistent outside of clones) parts
-    acc_1G = 512 * 8;
+    p_sensor_set->acc.acc_1G = 512 * 8;
 
     // Try I2C access first
     mpu.read = mpuReadRegisterI2C;
@@ -124,7 +120,7 @@ bool mpuDetect(sensorSet_t *p_sensor_set, void* p_param)
 
     if (sig == MPUx0x0_WHO_AM_I_CONST) {
         hw = MPU_60x0;
-        mpu6050CheckRevision();
+        mpu6050CheckRevision(p_sensor_set);
 #ifdef PROD_DEBUG
         mpu6050SelfTest();
 #endif
@@ -156,7 +152,7 @@ bool mpuDetect(sensorSet_t *p_sensor_set, void* p_param)
     mpu.init(p_sensor_set);
 
     // MPU6500 on I2C bus
-    if (g_crystal_clock == 12000000 && hw == MPU_65xx_I2C)
+    if (((drv_mpu_config_t*)p_param)->crystal_clock == 12000000 && hw == MPU_65xx_I2C)
         hw_revision = NAZE32_REV6;
 
     return true;
@@ -168,7 +164,7 @@ static void mpu3050Init(sensorSet_t *p_sensor_set)
     PifMpu30x0UserCtrl user_ctrl;
     PifMpu30x0PwrMgmt pwr_mgmt;
 
-    pifMpu30x0_Init(&mpu.mpu30x0, PIF_ID_AUTO, &g_i2c_port, MPU30X0_I2C_ADDR, &imu_sensor);
+    pifMpu30x0_Init(&mpu.mpu30x0, PIF_ID_AUTO, &g_i2c_port, MPU30X0_I2C_ADDR, &p_sensor_set->imu_sensor);
 
     pifI2cDevice_WriteRegByte(mpu.mpu30x0._p_i2c, MPU30X0_REG_SMPLRT_DIV, 0);
 
@@ -215,7 +211,7 @@ static void mpu6050Init(sensorSet_t *p_sensor_set)
     PifMpu60x0GyroConfig gyro_config;
     PifMpu60x0AccelConfig accel_config;
 
-    pifMpu60x0_Init(&mpu.mpu60x0, PIF_ID_AUTO, &g_i2c_port, MPU60X0_I2C_ADDR(0), &imu_sensor);
+    pifMpu60x0_Init(&mpu.mpu60x0, PIF_ID_AUTO, &g_i2c_port, MPU60X0_I2C_ADDR(0), &p_sensor_set->imu_sensor);
 
     pifI2cDevice_WriteRegByte(mpu.mpu60x0._p_i2c, MPU60X0_REG_SMPLRT_DIV, 0x00); // Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
 
@@ -272,7 +268,7 @@ static void mpu6500Init(sensorSet_t *p_sensor_set)
     PifMpu6500Config config;
     PifMpu6500AccelConfig accel_config;
 
-    pifMpu6500_Init(&mpu.mpu6500, PIF_ID_AUTO, &g_i2c_port, MPU6500_I2C_ADDR(0), &imu_sensor);
+    pifMpu6500_Init(&mpu.mpu6500, PIF_ID_AUTO, &g_i2c_port, MPU6500_I2C_ADDR(0), &p_sensor_set->imu_sensor);
 
     // Device reset
     pifI2cDevice_WriteRegByte(mpu.mpu6500._p_i2c, MPU6500_REG_PWR_MGMT_1, 0x80); // Device reset
@@ -331,41 +327,43 @@ static void mpu6500Init(sensorSet_t *p_sensor_set)
     p_sensor_set->gyro.read = mpuGyroRead;
 }
 
-static BOOL dummyInit(PifImuSensorAlign align)
+static BOOL dummyInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
 {
+    (void)p_sensor_set;
     (void)align;
     return TRUE;
 }
 
-static BOOL dummyRead(int16_t *data)
+static BOOL dummyRead(sensorSet_t *p_sensor_set, int16_t *data)
 {
+    (void)p_sensor_set;
     (void)data;
     return TRUE;
 }
 
-static BOOL mpuAccInit(PifImuSensorAlign align)
+static BOOL mpuAccInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
 {
-    pifImuSensor_SetAccelAlign(&imu_sensor, align);
+    pifImuSensor_SetAccelAlign(&p_sensor_set->imu_sensor, align);
     return TRUE;
 }
 
-static BOOL mpuGyroInit(PifImuSensorAlign align)
+static BOOL mpuGyroInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
 {
-    pifImuSensor_SetGyroAlign(&imu_sensor, align);
+    pifImuSensor_SetGyroAlign(&p_sensor_set->imu_sensor, align);
     return TRUE;
 }
 
-static BOOL mpuAccRead(int16_t *acc_data)
+static BOOL mpuAccRead(sensorSet_t *p_sensor_set, int16_t *acc_data)
 {
-    return pifImuSensor_ReadAccel2(&imu_sensor, acc_data);
+    return pifImuSensor_ReadAccel2(&p_sensor_set->imu_sensor, acc_data);
 }
 
-static BOOL mpuGyroRead(int16_t *gyro_data)
+static BOOL mpuGyroRead(sensorSet_t *p_sensor_set, int16_t *gyro_data)
 {
-    return pifImuSensor_ReadGyro2(&imu_sensor, gyro_data);
+    return pifImuSensor_ReadGyro2(&p_sensor_set->imu_sensor, gyro_data);
 }
 
-static void mpu6050CheckRevision(void)
+static void mpu6050CheckRevision(sensorSet_t *p_sensor_set)
 {
     uint8_t rev;
     uint8_t tmp[6];
@@ -397,7 +395,7 @@ static void mpu6050CheckRevision(void)
 
     // All this just to set the value
     if (half)
-        acc_1G = 255 * 8;
+        p_sensor_set->acc.acc_1G = 255 * 8;
 }
 
 #ifdef PROD_DEBUG

@@ -84,12 +84,6 @@ uint8_t batteryCellCount = 3;       // cell count
 uint16_t batteryWarningVoltage;     // slow buzzer after this one, recommended 80% of battery used. Time to land.
 uint16_t batteryCriticalVoltage;    // annoying buzzer after this one, battery is going to be dead.
 
-PifI2cPort g_i2c_port;
-PifTimerManager g_timer_1ms;
-PifTask* g_task_compute_imu;
-PifTask* g_task_compute_rc;
-PifTask* g_task_gps;
-
 // Time of automatic disarm when "Don't spin the motors when armed" is enabled.
 static uint32_t disarmTime = 0;
 
@@ -247,7 +241,7 @@ uint16_t taskLedState(PifTask *p_task)
 
     // Read out gyro temperature. can use it for something somewhere. maybe get MCU temperature instead? lots of fun possibilities.
     if (sensor_set.gyro.temperature)
-        sensor_set.gyro.temperature(&telemTemperature1);
+        sensor_set.gyro.temperature(&sensor_set, &telemTemperature1);
     else {
         // TODO MCU temp
     }
@@ -263,7 +257,7 @@ uint16_t taskLedState(PifTask *p_task)
 
 #ifdef LEDRING
     if (feature(FEATURE_LED_RING)) {
-        ledringState();
+        ledringState(heading, angle, f.ARMED);
     }
 #endif
 
@@ -915,9 +909,7 @@ uint16_t taskLoop(PifTask *p_task)
 
 uint16_t taskComputeImu(PifTask *p_task)
 {
-	static uint8_t step = 0;
-
-    (void)p_task;
+	static int step = 0;
 
     switch (step) {
     case 0:

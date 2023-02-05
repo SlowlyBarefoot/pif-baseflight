@@ -189,11 +189,9 @@ int main(void)
 
     g_featureDefault = featureDefault;
 
-    if (!pifI2cPort_Init(&g_i2c_port, PIF_ID_AUTO, 5, EEPROM_PAGE_SIZE)) FAIL;
-    g_i2c_port.act_read = actI2cRead;
-    g_i2c_port.act_write = actI2cWrite;
+    if (!i2cInit()) FAIL;
 
-    if (!initEEPROM()) FAIL;
+    if (!initEEPROM(storageInit())) FAIL;
     if (!checkFirstTime(false)) FAIL;
     readEEPROM();
 
@@ -359,16 +357,16 @@ int main(void)
 
 #ifdef MAG
     if (sensors(SENSOR_MAG)) {
-        sensor_set.mag.p_m_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskMagGetAdc, NULL, TRUE);             // 100ms
-        if (!sensor_set.mag.p_m_task) FAIL;
-        sensor_set.mag.p_m_task->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
+        sensor_set.mag.p_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskMagGetAdc, NULL, TRUE);             // 100ms
+        if (!sensor_set.mag.p_task) FAIL;
+        sensor_set.mag.p_task->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
     }
 #endif
 
 #ifdef BARO
     if (sensors(SENSOR_BARO)) {
-        sensor_set.baro.p_b_task = pifTaskManager_Add(TM_EXTERNAL_ORDER, 0, taskGetEstimatedAltitude, NULL, FALSE);
-        if (!sensor_set.baro.p_b_task) FAIL;
+        sensor_set.baro.p_task = pifTaskManager_Add(TM_EXTERNAL_ORDER, 0, taskGetEstimatedAltitude, NULL, FALSE);
+        if (!sensor_set.baro.p_task) FAIL;
     }
 #endif
 

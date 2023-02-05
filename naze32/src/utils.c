@@ -62,7 +62,7 @@ void initBoardAlignment(void)
     boardRotation[2][2] = cosy * cosx;
 }
 
-void alignBoard(int16_t *vec)
+static void alignBoard(int16_t *vec)
 {
     int16_t x = vec[X];
     int16_t y = vec[Y];

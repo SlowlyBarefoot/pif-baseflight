@@ -15,7 +15,6 @@
 uint16_t calibratingA = 0;      // the calibration is done is the main loop. Calibrating decreases at each cycle down to 0, then we enter in a normal mode.
 uint16_t calibratingB = 0;      // baro calibration = get new ground pressure value
 uint16_t calibratingG = 0;
-uint16_t acc_1G = 256;          // this is the 1G measured acceleration.
 int16_t heading, magHold;
 
 #ifdef BARO
@@ -31,21 +30,32 @@ extern uint16_t batteryWarningVoltage;
 extern uint16_t batteryCriticalVoltage;
 extern uint8_t batteryCellCount;
 
+static void evtBaroRead(float pressure, float temperature);
+
 sensorSet_t sensor_set = {
 	.gyro.hardware = NULL,
+
 	.acc.hardware = NULL,		// acc access functions
+	.acc.acc_1G = 256,     			// this is the 1G measured acceleration.
+
 	.mag.hardware = NULL, 		// mag access functions
 	.mag.declination = 0.0f,
-	.baro.hardware = NULL		// barometer access functions
+	.mag.p_task = NULL,
+
+#ifdef BARO
+	.baro.hardware = NULL,		// barometer access functions
+	.baro.p_task = NULL,
+	.baro.evt_read = &evtBaroRead,
+#endif
 };
-PifImuSensor imu_sensor;
+
 
 bool sensorsAutodetect(sensorDetect_t* gyroDetect, sensorDetect_t* accDetect, sensorDetect_t* baroDetect, sensorDetect_t* magDetect)
 {
     int16_t deg, min;
 
-    pifImuSensor_Init(&imu_sensor);
-    pifImuSensor_InitBoardAlignment(&imu_sensor, mcfg.board_align_roll, mcfg.board_align_pitch, mcfg.board_align_yaw);
+    pifImuSensor_Init(&sensor_set.imu_sensor);
+    pifImuSensor_InitBoardAlignment(&sensor_set.imu_sensor, mcfg.board_align_roll, mcfg.board_align_pitch, mcfg.board_align_yaw);
 
     // set gyro low pass filter parameters
     sensor_set.gyro.lpf = mcfg.gyro_lpf;
@@ -94,9 +104,9 @@ bool sensorsAutodetect(sensorDetect_t* gyroDetect, sensorDetect_t* accDetect, se
 
     // Now time to init things, acc first
     if (sensors(SENSOR_ACC))
-        sensor_set.acc.init(mcfg.acc_align);
+        sensor_set.acc.init(&sensor_set, mcfg.acc_align);
     // this is safe because either mpu6050 or mpu3050 or lg3d20 sets it, and in case of fail, we never get here.
-    sensor_set.gyro.init(mcfg.gyro_align);
+    sensor_set.gyro.init(&sensor_set, mcfg.gyro_align);
 
 #ifdef MAG
     // Autodetect Invensense mag hardware
@@ -191,7 +201,7 @@ static void ACC_Common(void)
         if (calibratingA == 1) {
             mcfg.accZero[ROLL] = (a[ROLL] + (CALIBRATING_ACC_CYCLES / 2)) / CALIBRATING_ACC_CYCLES;
             mcfg.accZero[PITCH] = (a[PITCH] + (CALIBRATING_ACC_CYCLES / 2)) / CALIBRATING_ACC_CYCLES;
-            mcfg.accZero[YAW] = (a[YAW] + (CALIBRATING_ACC_CYCLES / 2)) / CALIBRATING_ACC_CYCLES - acc_1G;
+            mcfg.accZero[YAW] = (a[YAW] + (CALIBRATING_ACC_CYCLES / 2)) / CALIBRATING_ACC_CYCLES - sensor_set.acc.acc_1G;
             cfg.angleTrim[ROLL] = 0;
             cfg.angleTrim[PITCH] = 0;
             writeEEPROM(1, true);      // write accZero in EEPROM
@@ -241,7 +251,7 @@ static void ACC_Common(void)
             AccInflightCalibrationSavetoEEProm = false;
             mcfg.accZero[ROLL] = b[ROLL] / 50;
             mcfg.accZero[PITCH] = b[PITCH] / 50;
-            mcfg.accZero[YAW] = b[YAW] / 50 - acc_1G;    // for nunchuk 200=1G
+            mcfg.accZero[YAW] = b[YAW] / 50 - sensor_set.acc.acc_1G;    // for nunchuk 200=1G
             cfg.angleTrim[ROLL] = 0;
             cfg.angleTrim[PITCH] = 0;
             writeEEPROM(1, true);          // write accZero in EEPROM
@@ -255,7 +265,7 @@ static void ACC_Common(void)
 
 BOOL ACC_getADC(void)
 {
-    if (sensor_set.acc.read(accADC)) {
+    if (sensor_set.acc.read(&sensor_set, accADC)) {
     	ACC_Common();
     	return TRUE;
     }
@@ -278,12 +288,12 @@ static void Baro_Common(void)
     baroHistIdx = indexplus1;
 }
 
-void evtBaroRead(float pressure, float temperature)
+static void evtBaroRead(float pressure, float temperature)
 {
-    baroPressure = pressure;
+    baroPressure = pressure * 100;
     baroTemperature = temperature * 100;
     Baro_Common();
-    pifTask_SetTrigger(sensor_set.baro.p_b_task);
+    pifTask_SetTrigger(sensor_set.baro.p_task);
 }
 #endif /* BARO */
 
@@ -370,7 +380,7 @@ static void GYRO_Common(void)
 BOOL Gyro_getADC(void)
 {
     // range: +/- 8192; +/- 2000 deg/sec
-    if (sensor_set.gyro.read(gyroADC)) {
+    if (sensor_set.gyro.read(&sensor_set, gyroADC)) {
     	GYRO_Common();
     	return TRUE;
     }
@@ -384,7 +394,7 @@ void Mag_init(void)
 {
     // initialize and calibration. turn on led during mag calibration (calibration routine blinks it)
     actLed1State(ON);
-    if (!sensor_set.mag.init(mcfg.mag_align)) {
+    if (!sensor_set.mag.init(&sensor_set, mcfg.gyro_align)) {
 #ifndef __PIF_NO_LOG__
     	pifLog_Printf(LT_INFO, "Mag Error:%d", pif_error);
 #endif
@@ -403,7 +413,7 @@ uint16_t taskMagGetAdc(PifTask *p_task)
     (void)p_task;
 
     // Read mag sensor
-    if (!sensor_set.mag.read(magADC)) {
+    if (!sensor_set.mag.read(&sensor_set, magADC)) {
     	pifTask_SetTrigger(p_task);
     	return 0;
     }

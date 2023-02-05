@@ -3,7 +3,7 @@
  * Licensed under GPL V3 or modified DCL - see https://github.com/multiwii/baseflight/blob/master/README.md
  */
 #include "board.h"
-#include "mw.h"
+#include "link_driver.h"
 
 #include "drv_gy86.h"
 
@@ -26,18 +26,16 @@
 
 
 // Hardware access functions
-static BOOL mpu6050Init(sensor_t *acc, sensor_t *gyro, sensor_t *mag, PifGy86Config* p_config);
+static BOOL mpu6050Init(sensorSet_t *p_sensor_set, PifGy86Config* p_config);
 
 // General forward declarations
-static BOOL mpuAccInit(PifImuSensorAlign align);
-static BOOL mpuAccRead(int16_t *accData);
-static BOOL mpuGyroInit(PifImuSensorAlign align);
-static BOOL mpuGyroRead(int16_t *gyroData);
-static BOOL hmc5883lInit(PifImuSensorAlign align);
-static BOOL hmc5883lRead(int16_t *magData);
+static BOOL mpuAccInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
+static BOOL mpuAccRead(sensorSet_t *p_sensor_set, int16_t *accData);
+static BOOL mpuGyroInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
+static BOOL mpuGyroRead(sensorSet_t *p_sensor_set, int16_t *gyroData);
+static BOOL hmc5883lInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
+static BOOL hmc5883lRead(sensorSet_t *p_sensor_set, int16_t *magData);
 
-// Needed for MPU6050 half-scale acc bug
-extern uint16_t acc_1G;
 // Hardware access function
 static PifGy86 s_gy86;
 
@@ -48,14 +46,11 @@ static const char* hw_Names[] = { "MPU6500", "HMC5883L", "MS5611" };
 bool gy86Detect(sensorSet_t *p_sensor_set, void* p_param)
 {
 	PifGy86Config config;
-#ifdef BARO
-    extern void evtBaroRead(float pressure, float temperature);
-#endif
 
     (void)p_param;
 
     // Set acc_1G. Modified once by mpu6050CheckRevision for old (hopefully nonexistent outside of clones) parts
-    acc_1G = 512 * 8;
+    p_sensor_set->acc.acc_1G = 512 * 8;
 
     // 16.4 dps/lsb scalefactor for all Invensense devices
     p_sensor_set->gyro.scale = (4.0f / 16.4f) * (M_PI / 180.0f) * 0.000001f;
@@ -87,10 +82,10 @@ bool gy86Detect(sensorSet_t *p_sensor_set, void* p_param)
 #ifdef BARO
     config.ms5611_osr = MS5611_OSR_4096;
     config.ms5611_read_period = 25;												// 25ms
-    config.ms5611_evt_read = evtBaroRead;
+    config.ms5611_evt_read = p_sensor_set->baro.evt_read;
 #endif
     // initialize the device
-    if (!mpu6050Init(&p_sensor_set->acc, &p_sensor_set->gyro, &p_sensor_set->mag, &config)) return false;
+    if (!mpu6050Init(p_sensor_set, &config)) return false;
 
     p_sensor_set->gyro.hardware = hw_Names[0];
     p_sensor_set->acc.hardware = hw_Names[0];
@@ -100,47 +95,47 @@ bool gy86Detect(sensorSet_t *p_sensor_set, void* p_param)
     return true;
 }
 
-static BOOL mpu6050Init(sensor_t *acc, sensor_t *gyro, sensor_t *mag, PifGy86Config* p_config)
+static BOOL mpu6050Init(sensorSet_t *p_sensor_set, PifGy86Config* p_config)
 {
-    if (!pifGy86_Init(&s_gy86, PIF_ID_AUTO, &g_i2c_port, &imu_sensor, p_config)) return FALSE;
+    if (!pifGy86_Init(&s_gy86, PIF_ID_AUTO, &g_i2c_port, &p_sensor_set->imu_sensor, p_config)) return FALSE;
 #ifdef BARO
     s_gy86._ms5611._p_task->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
 #endif
     s_gy86._mpu6050.gyro_scale = 4;
     s_gy86._mpu6050.temp_scale = 100;
 
-    acc->init = mpuAccInit;
-    acc->read = mpuAccRead;
-    gyro->init = mpuGyroInit;
-    gyro->read = mpuGyroRead;
-    mag->init = hmc5883lInit;
-    mag->read = hmc5883lRead;
+    p_sensor_set->acc.init = mpuAccInit;
+    p_sensor_set->acc.read = mpuAccRead;
+    p_sensor_set->gyro.init = mpuGyroInit;
+    p_sensor_set->gyro.read = mpuGyroRead;
+    p_sensor_set->mag.init = hmc5883lInit;
+    p_sensor_set->mag.read = hmc5883lRead;
     return TRUE;
 }
 
-static BOOL mpuAccInit(PifImuSensorAlign align)
+static BOOL mpuAccInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
 {
-    pifImuSensor_SetAccelAlign(&imu_sensor, align);
+    pifImuSensor_SetAccelAlign(&p_sensor_set->imu_sensor, align);
     return TRUE;
 }
 
-static BOOL mpuAccRead(int16_t *accData)
+static BOOL mpuAccRead(sensorSet_t *p_sensor_set, int16_t *accData)
 {
-    return pifImuSensor_ReadAccel2(&imu_sensor, accData);
+    return pifImuSensor_ReadAccel2(&p_sensor_set->imu_sensor, accData);
 }
 
-static BOOL mpuGyroInit(PifImuSensorAlign align)
+static BOOL mpuGyroInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
 {
-    pifImuSensor_SetGyroAlign(&imu_sensor, align);
+    pifImuSensor_SetGyroAlign(&p_sensor_set->imu_sensor, align);
     return TRUE;
 }
 
-static BOOL mpuGyroRead(int16_t *gyroData)
+static BOOL mpuGyroRead(sensorSet_t *p_sensor_set, int16_t *gyroData)
 {
-	return pifImuSensor_ReadGyro2(&imu_sensor, gyroData);
+	return pifImuSensor_ReadGyro2(&p_sensor_set->imu_sensor, gyroData);
 }
 
-static BOOL hmc5883lInit(PifImuSensorAlign align)
+static BOOL hmc5883lInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
 {
     int16_t magADC[3];
     int i;
@@ -148,7 +143,7 @@ static BOOL hmc5883lInit(PifImuSensorAlign align)
     bool bret = true;           // Error indicator
     PifHmc5883ConfigA config_a;
 
-    pifImuSensor_SetMagAlign(&imu_sensor, align);
+    pifImuSensor_SetMagAlign(&p_sensor_set->imu_sensor, align);
 
     if (!pifI2cDevice_WriteRegBit8(s_gy86._mpu6050._p_i2c, MPU60X0_REG_USER_CTRL, MPU60X0_USER_CTRL_I2C_MST_EN, FALSE)) return FALSE;
 
@@ -230,9 +225,9 @@ static BOOL hmc5883lInit(PifImuSensorAlign align)
     return TRUE;
 }
 
-static BOOL hmc5883lRead(int16_t *magData)
+static BOOL hmc5883lRead(sensorSet_t *p_sensor_set, int16_t *magData)
 {
     // During calibration, magGain is 1.0, so the read returns normal non-calibrated values.
     // After calibration is done, magGain is set to calculated gain values.
-	return pifImuSensor_ReadMag2(&imu_sensor, magData);
+	return pifImuSensor_ReadMag2(&p_sensor_set->imu_sensor, magData);
 }

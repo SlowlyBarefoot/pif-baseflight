@@ -4,6 +4,7 @@
  */
 
 #include "board.h"
+#include "link_driver.h"
 #include "mw.h"
 
 #include "storage/pif_storage.h"
@@ -21,10 +22,13 @@ static void resetConf(void);
 
 static PifStorage* p_storage;
 
-bool initEEPROM(void)
+bool initEEPROM(PifStorage* p_sto)
 {
-	p_storage = storageInit();
-	return p_storage != NULL;
+	if (p_sto) {
+		p_storage = p_sto;
+		return TRUE;
+	}
+	return FALSE;
 }
 
 void parseRcChannels(const char *input)

@@ -5,6 +5,7 @@
 
 #include "board.h"
 #include "cli.h"
+#include "link_driver.h"
 #include "mw.h"
 #ifdef TELEMETRY
 #include "telemetry_common.h"
@@ -150,97 +151,25 @@ static const char pidnames[] =
 typedef  struct mspPortState_t {
     serialPort_t *port;
     PifMsp pif_msp;
-    uint8_t* p_rx_packet;
-    uint8_t tx_packet[128], *p_tx_packet;
 } mspPortState_t;
 
 static mspPortState_t ports[2];
 
 static BOOL s_change_cli = FALSE;
 
-static void evtMspReceive(PifMsp* p_owner, PifMspPacket* p_packet);
-static void evtMspOtherPacket(PifMsp* p_owner, uint8_t data);
+static void evtMspReceive(PifMsp* p_owner, PifMspPacket* p_packet, PifIssuerP p_issuer);
+static void evtMspOtherPacket(PifMsp* p_owner, uint8_t data, PifIssuerP p_issuer);
 
-static uint8_t _Read8(mspPortState_t* p_port)
+static void _SerializeBoxNamesReply(PifMsp* p_owner)
 {
-	uint8_t data = p_port->p_rx_packet[0];
-	p_port->p_rx_packet++;
-	return data;
-}
+    int i, idx;
 
-static uint16_t _Read16(mspPortState_t* p_port)
-{
-	uint16_t data = p_port->p_rx_packet[0] + (p_port->p_rx_packet[1] << 8);
-	p_port->p_rx_packet += 2;
-	return data;
-}
-
-static uint16_t _Read32(mspPortState_t* p_port)
-{
-	uint32_t data = p_port->p_rx_packet[0] + (p_port->p_rx_packet[1] << 8) +
-			((uint32_t)p_port->p_rx_packet[2] << 16) + ((uint32_t)p_port->p_rx_packet[3] << 24);
-	p_port->p_rx_packet += 4;
-	return data;
-}
-
-static void _Serialize8(mspPortState_t* p_port, uint8_t a)
-{
-    p_port->p_tx_packet[0] = a;
-    p_port->p_tx_packet++;
-}
-
-static void _Serialize16(mspPortState_t* p_port, int16_t a)
-{
-    p_port->p_tx_packet[0] = a & 0xFF;
-    p_port->p_tx_packet[1] = (a >> 8) & 0xFF;
-    p_port->p_tx_packet += 2;
-}
-
-static void _Serialize32(mspPortState_t* p_port, uint32_t a)
-{
-    p_port->p_tx_packet[0] = a & 0xFF;
-    p_port->p_tx_packet[1] = (a >> 8) & 0xFF;
-    p_port->p_tx_packet[2] = (a >> 16) & 0xFF;
-    p_port->p_tx_packet[3] = (a >> 24) & 0xFF;
-    p_port->p_tx_packet += 4;
-}
-
-static void _SerializeStruct(mspPortState_t* p_port, uint8_t *cb, uint8_t siz)
-{
-    while (siz--)
-        *p_port->p_tx_packet++ = *cb++;
-}
-
-static void _SerializeNames(mspPortState_t* p_port, const char *s)
-{
-    const char *c;
-    for (c = s; *c; c++)
-        *p_port->p_tx_packet++ = *c;
-}
-
-static int _SerializeBoxNamesReply(mspPortState_t* p_port)
-{
-    int i, idx, j, flag = 1, count = 0, len;
-
-reset:
     // in first run of the loop, we grab total size of junk to be sent
     // then come back and actually send it
     for (i = 0; i < numberBoxItems; i++) {
         idx = availableBoxes[i];
-        len = strlen(boxes[idx].boxName);
-        if (flag) {
-            count += len;
-        } else {
-            for (j = 0; j < len; j++)
-                *p_port->p_tx_packet++ = boxes[idx].boxName[j];
-        }
+       	pifMsp_AddAnswer(p_owner, (uint8_t*)boxes[idx].boxName, strlen(boxes[idx].boxName));
     }
-
-    if (flag) {
-        flag = 0;
-        goto reset;
-    }
-    return count;
 }
 
 void serialInit(uint8_t port, uint32_t baudrate, uint8_t flexport)
@@ -251,8 +180,7 @@ void serialInit(uint8_t port, uint32_t baudrate, uint8_t flexport)
     ports[0].port = core.mainport;
 
     if (!pifMsp_Init(&ports[0].pif_msp, &g_timer_1ms, PIF_ID_MSP(0))) return;
-    ports[0].pif_msp.evt_receive = evtMspReceive;
-    ports[0].pif_msp.evt_other_packet = evtMspOtherPacket;
+    pifMsp_AttachEvtReceive(&ports[0].pif_msp, evtMspReceive, evtMspOtherPacket, core.mainport);
     pifMsp_AttachComm(&ports[0].pif_msp, &core.mainport->comm);
 
     serialStartReceiveFunc(&core.mainport->comm);
@@ -263,8 +191,7 @@ void serialInit(uint8_t port, uint32_t baudrate, uint8_t flexport)
         ports[1].port = core.flexport;
 
         if (!pifMsp_Init(&ports[1].pif_msp, &g_timer_1ms, PIF_ID_MSP(1))) return;
-        ports[1].pif_msp.evt_receive = evtMspReceive;
-        ports[1].pif_msp.evt_other_packet = evtMspOtherPacket;
+        pifMsp_AttachEvtReceive(&ports[1].pif_msp, evtMspReceive, evtMspOtherPacket, core.flexport);
         pifMsp_AttachComm(&ports[1].pif_msp, &core.flexport->comm);
 
         serialStartReceiveFunc(&core.flexport->comm);
@@ -314,7 +241,7 @@ void serialInit(uint8_t port, uint32_t baudrate, uint8_t flexport)
     numberBoxItems = idx;
 }
 
-void evtMspReceive(PifMsp* p_owner, PifMspPacket* p_packet)
+void evtMspReceive(PifMsp* p_owner, PifMspPacket* p_packet, PifIssuerP p_issuer)
 {
     uint32_t i, j, tmp, junk;
 #ifdef GPS
@@ -322,123 +249,112 @@ void evtMspReceive(PifMsp* p_owner, PifMspPacket* p_packet)
     int32_t lat = 0, lon = 0, alt = 0;
 #endif
     const char *build = __DATE__;
-    mspPortState_t* p_port = &ports[PIF_ID_MSP_2_IDX(p_owner->_id)];
 
-    p_port->p_rx_packet = p_packet->p_data;
-    p_port->p_tx_packet = p_port->tx_packet;
+    (void)p_issuer;
+
+    pifMsp_MakeAnswer(p_owner, p_packet);
     switch (p_packet->command) {
     case MSP_SET_RAW_RC:
         for (i = 0; i < 8; i++)
-            rcData[i] = _Read16(p_port);
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
+            rcData[i] = pifMsp_ReadData16(p_packet);
         mspFrameRecieve();
         break;
         
     case MSP_SET_ACC_TRIM:
-        cfg.angleTrim[PITCH] = _Read16(p_port);
-        cfg.angleTrim[ROLL]  = _Read16(p_port);
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
+        cfg.angleTrim[PITCH] = pifMsp_ReadData16(p_packet);
+        cfg.angleTrim[ROLL]  = pifMsp_ReadData16(p_packet);
         break;
 
 #ifdef GPS
     case MSP_SET_RAW_GPS:
-        f.GPS_FIX = _Read8(p_port);
-        GPS_numSat = _Read8(p_port);
-        GPS_coord[LAT] = _Read32(p_port);
-        GPS_coord[LON] = _Read32(p_port);
-        GPS_altitude = _Read16(p_port);
-        GPS_speed = _Read16(p_port);
+        f.GPS_FIX = pifMsp_ReadData8(p_packet);
+        GPS_numSat = pifMsp_ReadData8(p_packet);
+        GPS_coord[LAT] = pifMsp_ReadData32(p_packet);
+        GPS_coord[LON] = pifMsp_ReadData32(p_packet);
+        GPS_altitude = pifMsp_ReadData16(p_packet);
+        GPS_speed = pifMsp_ReadData16(p_packet);
         GPS_update |= 2;        // New data signalisation to GPS functions
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
         break;
 #endif
 
     case MSP_SET_PID:
         for (i = 0; i < PIDITEMS; i++) {
-            cfg.P8[i] = _Read8(p_port);
-            cfg.I8[i] = _Read8(p_port);
-            cfg.D8[i] = _Read8(p_port);
+            cfg.P8[i] = pifMsp_ReadData8(p_packet);
+            cfg.I8[i] = pifMsp_ReadData8(p_packet);
+            cfg.D8[i] = pifMsp_ReadData8(p_packet);
 #ifndef __PIF_NO_LOG__
             pifLog_Printf(LT_INFO, "S-PID:%d P=%u I=%u D=%u", i, cfg.P8[i], cfg.I8[i], cfg.D8[i]);
 #endif
         }
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
         break;
 
     case MSP_SET_BOX:
         for (i = 0; i < numberBoxItems; i++)
-            cfg.activate[availableBoxes[i]] = _Read16(p_port);
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
+            cfg.activate[availableBoxes[i]] = pifMsp_ReadData16(p_packet);
         break;
 
     case MSP_SET_RC_TUNING:
-        cfg.rcRate8 = _Read8(p_port);
-        cfg.rcExpo8 = _Read8(p_port);
-        _Read8(p_port); // Legacy pitch-roll rate, read but not set.
-        cfg.yawRate = _Read8(p_port);
-        cfg.dynThrPID = _Read8(p_port);
-        cfg.thrMid8 = _Read8(p_port);
-        cfg.thrExpo8 = _Read8(p_port);
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
+        cfg.rcRate8 = pifMsp_ReadData8(p_packet);
+        cfg.rcExpo8 = pifMsp_ReadData8(p_packet);
+        pifMsp_ReadData8(p_packet); // Legacy pitch-roll rate, read but not set.
+        cfg.yawRate = pifMsp_ReadData8(p_packet);
+        cfg.dynThrPID = pifMsp_ReadData8(p_packet);
+        cfg.thrMid8 = pifMsp_ReadData8(p_packet);
+        cfg.thrExpo8 = pifMsp_ReadData8(p_packet);
         break;
 
     case MSP_SET_MISC:
-        tmp = _Read16(p_port);
+        tmp = pifMsp_ReadData16(p_packet);
         // sanity check
         if (tmp < 1600 && tmp > 1400)
             mcfg.midrc = tmp;
-        mcfg.minthrottle = _Read16(p_port);
-        mcfg.maxthrottle = _Read16(p_port);
-        mcfg.mincommand = _Read16(p_port);
-        cfg.failsafe_throttle = _Read16(p_port);
-        mcfg.gps_type = _Read8(p_port);
-        mcfg.gps_baudrate = _Read8(p_port);
-        mcfg.gps_ubx_sbas = _Read8(p_port);
-        mcfg.multiwiicurrentoutput = _Read8(p_port);
-        mcfg.rssi_aux_channel = _Read8(p_port);
-        _Read8(p_port);
-        cfg.mag_declination = _Read16(p_port) * 10;
-        mcfg.vbatscale = _Read8(p_port);           // actual vbatscale as intended
-        mcfg.vbatmincellvoltage = _Read8(p_port);  // vbatlevel_warn1 in MWC2.3 GUI
-        mcfg.vbatmaxcellvoltage = _Read8(p_port);  // vbatlevel_warn2 in MWC2.3 GUI
-        mcfg.vbatwarningcellvoltage = _Read8(p_port); // vbatlevel when buzzer starts to alert
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
+        mcfg.minthrottle = pifMsp_ReadData16(p_packet);
+        mcfg.maxthrottle = pifMsp_ReadData16(p_packet);
+        mcfg.mincommand = pifMsp_ReadData16(p_packet);
+        cfg.failsafe_throttle = pifMsp_ReadData16(p_packet);
+        mcfg.gps_type = pifMsp_ReadData8(p_packet);
+        mcfg.gps_baudrate = pifMsp_ReadData8(p_packet);
+        mcfg.gps_ubx_sbas = pifMsp_ReadData8(p_packet);
+        mcfg.multiwiicurrentoutput = pifMsp_ReadData8(p_packet);
+        mcfg.rssi_aux_channel = pifMsp_ReadData8(p_packet);
+        pifMsp_ReadData8(p_packet);
+        cfg.mag_declination = pifMsp_ReadData16(p_packet) * 10;
+        mcfg.vbatscale = pifMsp_ReadData8(p_packet);           // actual vbatscale as intended
+        mcfg.vbatmincellvoltage = pifMsp_ReadData8(p_packet);  // vbatlevel_warn1 in MWC2.3 GUI
+        mcfg.vbatmaxcellvoltage = pifMsp_ReadData8(p_packet);  // vbatlevel_warn2 in MWC2.3 GUI
+        mcfg.vbatwarningcellvoltage = pifMsp_ReadData8(p_packet); // vbatlevel when buzzer starts to alert
         break;
 
     case MSP_SET_MOTOR:
         for (i = 0; i < 8; i++)
-            motor_disarmed[i] = _Read16(p_port);
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
+            motor_disarmed[i] = pifMsp_ReadData16(p_packet);
         break;
 
     case MSP_SELECT_SETTING:
         if (!f.ARMED) {
-            mcfg.current_profile = _Read8(p_port);
+            mcfg.current_profile = pifMsp_ReadData8(p_packet);
             if (mcfg.current_profile > 2)
                 mcfg.current_profile = 0;
             // this writes new profile index and re-reads it
             writeEEPROM(0, false);
         }
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
         break;
 
     case MSP_SET_HEAD:
-        magHold = _Read16(p_port);
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
+        magHold = pifMsp_ReadData16(p_packet);
         break;
 
     case MSP_IDENT:
-        _Serialize8(p_port, VERSION);                    // multiwii version
-        _Serialize8(p_port, mcfg.mixerConfiguration);    // type of multicopter
-        _Serialize8(p_port, MSP_VERSION);                // MultiWii Serial Protocol Version
-        _Serialize32(p_port, CAP_PLATFORM_32BIT | CAP_BASEFLIGHT_CONFIG | CAP_DYNBALANCE | CAP_FW_FLAPS); // "capability"
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 7);
+        pifMsp_AddAnswer8(p_owner, VERSION);                    // multiwii version
+        pifMsp_AddAnswer8(p_owner, mcfg.mixerConfiguration);    // type of multicopter
+        pifMsp_AddAnswer8(p_owner, MSP_VERSION);                // MultiWii Serial Protocol Version
+        pifMsp_AddAnswer32(p_owner, CAP_PLATFORM_32BIT | CAP_BASEFLIGHT_CONFIG | CAP_DYNBALANCE | CAP_FW_FLAPS); // "capability"
         break;
 
     case MSP_STATUS:
-        _Serialize16(p_port, cycleTime);
-        _Serialize16(p_port, g_i2c_port.error_count);
-        _Serialize16(p_port, sensors(SENSOR_ACC) | sensors(SENSOR_BARO) << 1 | sensors(SENSOR_MAG) << 2 | sensors(SENSOR_GPS) << 3 | sensors(SENSOR_SONAR) << 4);
+        pifMsp_AddAnswer16(p_owner, cycleTime);
+        pifMsp_AddAnswer16(p_owner, g_i2c_port.error_count);
+        pifMsp_AddAnswer16(p_owner, sensors(SENSOR_ACC) | sensors(SENSOR_BARO) << 1 | sensors(SENSOR_MAG) << 2 | sensors(SENSOR_GPS) << 3 | sensors(SENSOR_SONAR) << 4);
         // OK, so you waste all the fucking time to have BOXNAMES and BOXINDEXES etc, and then you go ahead and serialize enabled shit simply by stuffing all
         // the bits in order, instead of setting the enabled bits based on BOXINDEX. WHERE IS THE FUCKING LOGIC IN THIS, FUCKWADS.
         // Serialize the boxes in the order we delivered them, until multiwii retards fix their shit
@@ -465,258 +381,233 @@ void evtMspReceive(PifMsp* p_owner, PifMspPacket* p_packet)
             if (flag)
                 junk |= 1 << i;
         }
-        _Serialize32(p_port, junk);
-        _Serialize8(p_port, mcfg.current_profile);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 11);
+        pifMsp_AddAnswer32(p_owner, junk);
+        pifMsp_AddAnswer8(p_owner, mcfg.current_profile);
         break;
 
     case MSP_RAW_IMU:
         // Retarded hack until multiwiidorks start using real units for sensor data
-        if (acc_1G > 1024) {
+        if (sensor_set.acc.acc_1G > 1024) {
             for (i = 0; i < 3; i++)
-                _Serialize16(p_port, accSmooth[i] / 8);
+                pifMsp_AddAnswer16(p_owner, accSmooth[i] / 8);
         } else {
             for (i = 0; i < 3; i++)
-                _Serialize16(p_port, accSmooth[i]);
+                pifMsp_AddAnswer16(p_owner, accSmooth[i]);
         }
         for (i = 0; i < 3; i++)
-            _Serialize16(p_port, gyroData[i]);
+            pifMsp_AddAnswer16(p_owner, gyroData[i]);
         for (i = 0; i < 3; i++)
-            _Serialize16(p_port, magADC[i]);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 18);
+            pifMsp_AddAnswer16(p_owner, magADC[i]);
         break;
 
     case MSP_SERVO:
-        _SerializeStruct(p_port, (uint8_t *)&servo, 16);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 16);
+        pifMsp_AddAnswer(p_owner, (uint8_t *)&servo, 16);
         break;
 
     case MSP_SERVO_CONF:
         for (i = 0; i < MAX_SERVOS; i++) {
-            _Serialize16(p_port, cfg.servoConf[i].min);
-            _Serialize16(p_port, cfg.servoConf[i].max);
-            _Serialize16(p_port, cfg.servoConf[i].middle);
-            _Serialize8(p_port, cfg.servoConf[i].rate);
-            _Serialize16(p_port, cfg.servoConf[i].direction);
+            pifMsp_AddAnswer16(p_owner, cfg.servoConf[i].min);
+            pifMsp_AddAnswer16(p_owner, cfg.servoConf[i].max);
+            pifMsp_AddAnswer16(p_owner, cfg.servoConf[i].middle);
+            pifMsp_AddAnswer8(p_owner, cfg.servoConf[i].rate);
+            pifMsp_AddAnswer16(p_owner, cfg.servoConf[i].direction);
         }
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, MAX_SERVOS * 9);
         break;
 
     case MSP_SET_SERVO_CONF:
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
         for (i = 0; i < MAX_SERVOS; i++) {
-            cfg.servoConf[i].min = _Read16(p_port);
-            cfg.servoConf[i].max = _Read16(p_port);
-            cfg.servoConf[i].middle = _Read16(p_port);
-            cfg.servoConf[i].rate = _Read8(p_port);
-            cfg.servoConf[i].direction = _Read16(p_port);
+            cfg.servoConf[i].min = pifMsp_ReadData16(p_packet);
+            cfg.servoConf[i].max = pifMsp_ReadData16(p_packet);
+            cfg.servoConf[i].middle = pifMsp_ReadData16(p_packet);
+            cfg.servoConf[i].rate = pifMsp_ReadData8(p_packet);
+            cfg.servoConf[i].direction = pifMsp_ReadData16(p_packet);
         }
         break;
 
     case MSP_SERVOMIX_CONF:
         for (i = 0; i < MAX_SERVO_RULES; i++) {
-            _Serialize8(p_port, mcfg.customServoMixer[i].targetChannel);
-            _Serialize8(p_port, mcfg.customServoMixer[i].fromChannel);
-            _Serialize8(p_port, mcfg.customServoMixer[i].rate);
-            _Serialize8(p_port, mcfg.customServoMixer[i].speed);
-            _Serialize8(p_port, mcfg.customServoMixer[i].min);
-            _Serialize8(p_port, mcfg.customServoMixer[i].max);
-            _Serialize8(p_port, mcfg.customServoMixer[i].box);
+            pifMsp_AddAnswer8(p_owner, mcfg.customServoMixer[i].targetChannel);
+            pifMsp_AddAnswer8(p_owner, mcfg.customServoMixer[i].fromChannel);
+            pifMsp_AddAnswer8(p_owner, mcfg.customServoMixer[i].rate);
+            pifMsp_AddAnswer8(p_owner, mcfg.customServoMixer[i].speed);
+            pifMsp_AddAnswer8(p_owner, mcfg.customServoMixer[i].min);
+            pifMsp_AddAnswer8(p_owner, mcfg.customServoMixer[i].max);
+            pifMsp_AddAnswer8(p_owner, mcfg.customServoMixer[i].box);
         }
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, MAX_SERVO_RULES * sizeof(servoMixer_t));
         break;
 
     case MSP_SET_SERVOMIX_CONF:
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
         for (i = 0; i < MAX_SERVO_RULES; i++) {
-            mcfg.customServoMixer[i].targetChannel = _Read8(p_port);
-            mcfg.customServoMixer[i].fromChannel = _Read8(p_port);
-            mcfg.customServoMixer[i].rate = _Read8(p_port);
-            mcfg.customServoMixer[i].speed = _Read8(p_port);
-            mcfg.customServoMixer[i].min = _Read8(p_port);
-            mcfg.customServoMixer[i].max = _Read8(p_port);
-            mcfg.customServoMixer[i].box = _Read8(p_port);
+            mcfg.customServoMixer[i].targetChannel = pifMsp_ReadData8(p_packet);
+            mcfg.customServoMixer[i].fromChannel = pifMsp_ReadData8(p_packet);
+            mcfg.customServoMixer[i].rate = pifMsp_ReadData8(p_packet);
+            mcfg.customServoMixer[i].speed = pifMsp_ReadData8(p_packet);
+            mcfg.customServoMixer[i].min = pifMsp_ReadData8(p_packet);
+            mcfg.customServoMixer[i].max = pifMsp_ReadData8(p_packet);
+            mcfg.customServoMixer[i].box = pifMsp_ReadData8(p_packet);
         }
         loadCustomServoMixer();
         break;
 
     case MSP_FW_CONFIG:
-        _Serialize8(p_port, mcfg.fw_althold_dir);
-        // _Serialize8(p_port, cfg.fw_vector_thrust); // Future Gui setting?
-        _Serialize16(p_port, cfg.fw_gps_maxcorr);
-        _Serialize16(p_port, cfg.fw_gps_rudder);
-        _Serialize16(p_port, cfg.fw_gps_maxclimb);
-        _Serialize16(p_port, cfg.fw_gps_maxdive);
-        _Serialize16(p_port, cfg.fw_climb_throttle);
-        _Serialize16(p_port, cfg.fw_cruise_throttle);
-        _Serialize16(p_port, cfg.fw_idle_throttle);
-        _Serialize16(p_port, cfg.fw_scaler_throttle);
-        _Serialize32(p_port, cfg.fw_roll_comp); // Float is Not compatible with Gui. Change to _Serialize8
-        _Serialize8(p_port, cfg.fw_rth_alt);
+        pifMsp_AddAnswer8(p_owner, mcfg.fw_althold_dir);
+        // pifMsp_AddAnswer8(p_owner, cfg.fw_vector_thrust); // Future Gui setting?
+        pifMsp_AddAnswer16(p_owner, cfg.fw_gps_maxcorr);
+        pifMsp_AddAnswer16(p_owner, cfg.fw_gps_rudder);
+        pifMsp_AddAnswer16(p_owner, cfg.fw_gps_maxclimb);
+        pifMsp_AddAnswer16(p_owner, cfg.fw_gps_maxdive);
+        pifMsp_AddAnswer16(p_owner, cfg.fw_climb_throttle);
+        pifMsp_AddAnswer16(p_owner, cfg.fw_cruise_throttle);
+        pifMsp_AddAnswer16(p_owner, cfg.fw_idle_throttle);
+        pifMsp_AddAnswer16(p_owner, cfg.fw_scaler_throttle);
+        pifMsp_AddAnswer32(p_owner, cfg.fw_roll_comp); // Float is Not compatible with Gui. Change to _Serialize8
+        pifMsp_AddAnswer8(p_owner, cfg.fw_rth_alt);
         // next added for future use
-        _Serialize32(p_port, 0);
-        _Serialize32(p_port, 0);
-        _Serialize32(p_port, 0);
-        _Serialize32(p_port, 0);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 38);
+        pifMsp_AddAnswer32(p_owner, 0);
+        pifMsp_AddAnswer32(p_owner, 0);
+        pifMsp_AddAnswer32(p_owner, 0);
+        pifMsp_AddAnswer32(p_owner, 0);
         break;
 
     case MSP_SET_FW_CONFIG:
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
-        mcfg.fw_althold_dir = _Read8(p_port);
-        // cfg.fw_vector_thrust = _Read8(p_port); // Future Gui setting?
-        cfg.fw_gps_maxcorr = _Read16(p_port);
-        cfg.fw_gps_rudder = _Read16(p_port);
-        cfg.fw_gps_maxclimb = _Read16(p_port);
-        cfg.fw_gps_maxdive = _Read16(p_port);
-        cfg.fw_climb_throttle = _Read16(p_port);
-        cfg.fw_cruise_throttle = _Read16(p_port);
-        cfg.fw_idle_throttle = _Read16(p_port);
-        cfg.fw_scaler_throttle = _Read16(p_port);
-        //cfg.fw_gps_maxdive = _Read32(p_port);// Wrong when using float in MSP!... Change to _Read8
-        _Read32(p_port); // Just read and skip
-        cfg.fw_rth_alt = _Read8(p_port);
+        mcfg.fw_althold_dir = pifMsp_ReadData8(p_packet);
+        // cfg.fw_vector_thrust = pifMsp_ReadData8(p_packet); // Future Gui setting?
+        cfg.fw_gps_maxcorr = pifMsp_ReadData16(p_packet);
+        cfg.fw_gps_rudder = pifMsp_ReadData16(p_packet);
+        cfg.fw_gps_maxclimb = pifMsp_ReadData16(p_packet);
+        cfg.fw_gps_maxdive = pifMsp_ReadData16(p_packet);
+        cfg.fw_climb_throttle = pifMsp_ReadData16(p_packet);
+        cfg.fw_cruise_throttle = pifMsp_ReadData16(p_packet);
+        cfg.fw_idle_throttle = pifMsp_ReadData16(p_packet);
+        cfg.fw_scaler_throttle = pifMsp_ReadData16(p_packet);
+        //cfg.fw_gps_maxdive = pifMsp_ReadData32(p_packet);// Wrong when using float in MSP!... Change to pifMsp_ReadData8
+        pifMsp_ReadData32(p_packet); // Just read and skip
+        cfg.fw_rth_alt = pifMsp_ReadData8(p_packet);
         // next added for future use
-        _Read32(p_port);
-        _Read32(p_port);
-        _Read32(p_port);
-        _Read32(p_port);
+        pifMsp_ReadData32(p_packet);
+        pifMsp_ReadData32(p_packet);
+        pifMsp_ReadData32(p_packet);
+        pifMsp_ReadData32(p_packet);
         break;
 
     case MSP_MOTOR:
-        _SerializeStruct(p_port, (uint8_t *)&motor, 16);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 16);
+        pifMsp_AddAnswer(p_owner, (uint8_t *)&motor, 16);
         break;
 
     case MSP_RC:
         for (i = 0; i < 8; i++)
-            _Serialize16(p_port, rcData[i]);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 16);
+            pifMsp_AddAnswer16(p_owner, rcData[i]);
         break;
 
     case MSP_RAW_GPS:
-        _Serialize8(p_port, f.GPS_FIX);
-        _Serialize8(p_port, GPS_numSat);
-        _Serialize32(p_port, GPS_coord[LAT]);
-        _Serialize32(p_port, GPS_coord[LON]);
-        _Serialize16(p_port, GPS_altitude);
-        _Serialize16(p_port, GPS_speed);
-        _Serialize16(p_port, GPS_ground_course);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 16);
+        pifMsp_AddAnswer8(p_owner, f.GPS_FIX);
+        pifMsp_AddAnswer8(p_owner, GPS_numSat);
+        pifMsp_AddAnswer32(p_owner, GPS_coord[LAT]);
+        pifMsp_AddAnswer32(p_owner, GPS_coord[LON]);
+        pifMsp_AddAnswer16(p_owner, GPS_altitude);
+        pifMsp_AddAnswer16(p_owner, GPS_speed);
+        pifMsp_AddAnswer16(p_owner, GPS_ground_course);
         break;
 
     case MSP_COMP_GPS:
-        _Serialize16(p_port, GPS_distanceToHome);
-        _Serialize16(p_port, GPS_directionToHome);
-        _Serialize8(p_port, GPS_update & 1);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 5);
+        pifMsp_AddAnswer16(p_owner, GPS_distanceToHome);
+        pifMsp_AddAnswer16(p_owner, GPS_directionToHome);
+        pifMsp_AddAnswer8(p_owner, GPS_update & 1);
         break;
 
     case MSP_ATTITUDE:
         for (i = 0; i < 2; i++)
-            _Serialize16(p_port, angle[i]);
-        _Serialize16(p_port, heading);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 6);
+            pifMsp_AddAnswer16(p_owner, angle[i]);
+        pifMsp_AddAnswer16(p_owner, heading);
         break;
 
     case MSP_ALTITUDE:
-        _Serialize32(p_port, EstAlt);
-        _Serialize16(p_port, vario);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 6);
+        pifMsp_AddAnswer32(p_owner, EstAlt);
+        pifMsp_AddAnswer16(p_owner, vario);
         break;
 
     case MSP_ANALOG:
-        _Serialize8(p_port, (uint8_t)constrain((int16_t)vbat, 0, 255));
-        _Serialize16(p_port, (uint16_t)constrain(mAhdrawn, 0, 0xFFFF)); // milliamphours drawn from battery
-//        _Serialize16(p_port, rssi);
-        _Serialize16(p_port, pif_performance._use_rate * 10);
+        pifMsp_AddAnswer8(p_owner, (uint8_t)constrain((int16_t)vbat, 0, 255));
+        pifMsp_AddAnswer16(p_owner, (uint16_t)constrain(mAhdrawn, 0, 0xFFFF)); // milliamphours drawn from battery
+        pifMsp_AddAnswer16(p_owner, rssi);
         if (mcfg.multiwiicurrentoutput)
-            _Serialize16(p_port, (uint16_t)constrain((abs(amperage) * 10), 0, 0xFFFF)); // send amperage in 0.001 A steps
+            pifMsp_AddAnswer16(p_owner, (uint16_t)constrain((abs(amperage) * 10), 0, 0xFFFF)); // send amperage in 0.001 A steps
         else
-            _Serialize16(p_port, (uint16_t)constrain(abs(amperage), 0, 0xFFFF)); // send amperage in 0.01 A steps
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 7);
+            pifMsp_AddAnswer16(p_owner, (uint16_t)constrain(abs(amperage), 0, 0xFFFF)); // send amperage in 0.01 A steps
         break;
 
     case MSP_RC_TUNING:
-        _Serialize8(p_port, cfg.rcRate8);
-        _Serialize8(p_port, cfg.rcExpo8);
-        _Serialize8(p_port, cfg.rollPitchRate[0]); // here for legacy support
-        _Serialize8(p_port, cfg.yawRate);
-        _Serialize8(p_port, cfg.dynThrPID);
-        _Serialize8(p_port, cfg.thrMid8);
-        _Serialize8(p_port, cfg.thrExpo8);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 7);
+        pifMsp_AddAnswer8(p_owner, cfg.rcRate8);
+        pifMsp_AddAnswer8(p_owner, cfg.rcExpo8);
+        pifMsp_AddAnswer8(p_owner, cfg.rollPitchRate[0]); // here for legacy support
+        pifMsp_AddAnswer8(p_owner, cfg.yawRate);
+        pifMsp_AddAnswer8(p_owner, cfg.dynThrPID);
+        pifMsp_AddAnswer8(p_owner, cfg.thrMid8);
+        pifMsp_AddAnswer8(p_owner, cfg.thrExpo8);
         break;
 
     case MSP_PID:
         for (i = 0; i < PIDITEMS; i++) {
-            _Serialize8(p_port, cfg.P8[i]);
-            _Serialize8(p_port, cfg.I8[i]);
-            _Serialize8(p_port, cfg.D8[i]);
+            pifMsp_AddAnswer8(p_owner, cfg.P8[i]);
+            pifMsp_AddAnswer8(p_owner, cfg.I8[i]);
+            pifMsp_AddAnswer8(p_owner, cfg.D8[i]);
 #ifndef __PIF_NO_LOG__
             pifLog_Printf(LT_INFO, "PID:%d P=%u I=%u D=%u", i, cfg.P8[i], cfg.I8[i], cfg.D8[i]);
 #endif
         }
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 3 * PIDITEMS);
         break;
 
     case MSP_PIDNAMES:
-        _SerializeNames(p_port, pidnames);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, sizeof(pidnames) - 1);
+        pifMsp_AddAnswer(p_owner, (uint8_t*)pidnames, sizeof(pidnames));
         break;
 
     case MSP_BOX:
         for (i = 0; i < numberBoxItems; i++)
-            _Serialize16(p_port, cfg.activate[availableBoxes[i]]);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 2 * numberBoxItems);
+            pifMsp_AddAnswer16(p_owner, cfg.activate[availableBoxes[i]]);
         break;
 
     case MSP_BOXNAMES:
-        tmp = _SerializeBoxNamesReply(p_port);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, tmp);
+        _SerializeBoxNamesReply(p_owner);
         break;
 
     case MSP_BOXIDS:
         for (i = 0; i < numberBoxItems; i++) {
             for  (j = 0; j < CHECKBOXITEMS; j++) {
                 if (boxes[j].permanentId == availableBoxes[i]) {
-                    _Serialize8(p_port, boxes[j].permanentId);
+                    pifMsp_AddAnswer8(p_owner, boxes[j].permanentId);
                     break;
                 }
             }
         }
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, numberBoxItems);
         break;
 
     case MSP_MISC:
-        _Serialize16(p_port, mcfg.midrc);
-        _Serialize16(p_port, mcfg.minthrottle);
-        _Serialize16(p_port, mcfg.maxthrottle);
-        _Serialize16(p_port, mcfg.mincommand);
-        _Serialize16(p_port, cfg.failsafe_throttle);
-        _Serialize8(p_port, mcfg.gps_type);
-        _Serialize8(p_port, mcfg.gps_baudrate);
-        _Serialize8(p_port, mcfg.gps_ubx_sbas);
-        _Serialize8(p_port, mcfg.multiwiicurrentoutput);
-        _Serialize8(p_port, mcfg.rssi_aux_channel);
-        _Serialize8(p_port, 0);
-        _Serialize16(p_port, cfg.mag_declination / 10); // TODO check this shit
-        _Serialize8(p_port, mcfg.vbatscale);
-        _Serialize8(p_port, mcfg.vbatmincellvoltage);
-        _Serialize8(p_port, mcfg.vbatmaxcellvoltage);
-        _Serialize8(p_port, mcfg.vbatwarningcellvoltage);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 2 * 6 + 4 + 2 + 4);
+        pifMsp_AddAnswer16(p_owner, mcfg.midrc);
+        pifMsp_AddAnswer16(p_owner, mcfg.minthrottle);
+        pifMsp_AddAnswer16(p_owner, mcfg.maxthrottle);
+        pifMsp_AddAnswer16(p_owner, mcfg.mincommand);
+        pifMsp_AddAnswer16(p_owner, cfg.failsafe_throttle);
+        pifMsp_AddAnswer8(p_owner, mcfg.gps_type);
+        pifMsp_AddAnswer8(p_owner, mcfg.gps_baudrate);
+        pifMsp_AddAnswer8(p_owner, mcfg.gps_ubx_sbas);
+        pifMsp_AddAnswer8(p_owner, mcfg.multiwiicurrentoutput);
+        pifMsp_AddAnswer8(p_owner, mcfg.rssi_aux_channel);
+        pifMsp_AddAnswer8(p_owner, 0);
+        pifMsp_AddAnswer16(p_owner, cfg.mag_declination / 10); // TODO check this shit
+        pifMsp_AddAnswer8(p_owner, mcfg.vbatscale);
+        pifMsp_AddAnswer8(p_owner, mcfg.vbatmincellvoltage);
+        pifMsp_AddAnswer8(p_owner, mcfg.vbatmaxcellvoltage);
+        pifMsp_AddAnswer8(p_owner, mcfg.vbatwarningcellvoltage);
         break;
 
     case MSP_MOTOR_PINS:
         for (i = 0; i < 8; i++)
-            _Serialize8(p_port, i + 1);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 8);
+            pifMsp_AddAnswer8(p_owner, i + 1);
         break;
 
 #ifdef GPS
     case MSP_WP:
-        wp_no = _Read8(p_port);    // get the wp number
+        wp_no = pifMsp_ReadData8(p_packet);    // get the wp number
         if (wp_no == 0) {
             lat = GPS_home[LAT];
             lon = GPS_home[LON];
@@ -724,24 +615,23 @@ void evtMspReceive(PifMsp* p_owner, PifMspPacket* p_packet)
             lat = GPS_hold[LAT];
             lon = GPS_hold[LON];
         }
-        _Serialize8(p_port, wp_no);
-        _Serialize32(p_port, lat);
-        _Serialize32(p_port, lon);
-        _Serialize32(p_port, AltHold);           // altitude (cm) will come here -- temporary implementation to test feature with apps
-        _Serialize16(p_port, 0);                 // heading  will come here (deg)
-        _Serialize16(p_port, 0);                 // time to stay (ms) will come here
-        _Serialize8(p_port, 0);                  // nav flag will come here
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 18);
+        pifMsp_AddAnswer8(p_owner, wp_no);
+        pifMsp_AddAnswer32(p_owner, lat);
+        pifMsp_AddAnswer32(p_owner, lon);
+        pifMsp_AddAnswer32(p_owner, AltHold);           // altitude (cm) will come here -- temporary implementation to test feature with apps
+        pifMsp_AddAnswer16(p_owner, 0);                 // heading  will come here (deg)
+        pifMsp_AddAnswer16(p_owner, 0);                 // time to stay (ms) will come here
+        pifMsp_AddAnswer8(p_owner, 0);                  // nav flag will come here
         break;
 
     case MSP_SET_WP:
-        wp_no = _Read8(p_port);    //get the wp number
-        lat = _Read32(p_port);
-        lon = _Read32(p_port);
-        alt = _Read32(p_port);     // to set altitude (cm)
-        _Read16(p_port);           // future: to set heading (deg)
-        _Read16(p_port);           // future: to set time to stay (ms)
-        _Read8(p_port);            // future: to set nav flag
+        wp_no = pifMsp_ReadData8(p_packet);    //get the wp number
+        lat = pifMsp_ReadData32(p_packet);
+        lon = pifMsp_ReadData32(p_packet);
+        alt = pifMsp_ReadData32(p_packet);     // to set altitude (cm)
+        pifMsp_ReadData16(p_packet);           // future: to set heading (deg)
+        pifMsp_ReadData16(p_packet);           // future: to set time to stay (ms)
+        pifMsp_ReadData8(p_packet);            // future: to set nav flag
         if (wp_no == 0) {
             GPS_home[LAT] = lat;
             GPS_home[LON] = lon;
@@ -757,26 +647,22 @@ void evtMspReceive(PifMsp* p_owner, PifMspPacket* p_packet)
             nav_mode = NAV_MODE_WP;
             GPS_set_next_wp(&GPS_hold[LAT], &GPS_hold[LON]);
         }
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
         break;
 #endif  // GPS
 
     case MSP_RESET_CONF:
         if (!f.ARMED)
             checkFirstTime(true);
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
         break;
 
     case MSP_ACC_CALIBRATION:
         if (!f.ARMED)
             calibratingA = CALIBRATING_ACC_CYCLES;
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
         break;
 
     case MSP_MAG_CALIBRATION:
         if (!f.ARMED)
             f.CALIBRATE_MAG = 1;
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
         break;
 
     case MSP_EEPROM_WRITE:
@@ -784,76 +670,72 @@ void evtMspReceive(PifMsp* p_owner, PifMspPacket* p_packet)
             pifMsp_MakeError(p_owner, p_packet);
         } else {
             writeEEPROM(0, true);
-            pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
         }
         break;
 
     case MSP_DEBUG:
         // make use of this crap, output some useful QA statistics
+        if (mcfg.looptime) debug[0] = (int16_t)cycleTime - mcfg.looptime;
+        else debug[0] = cycleTime;
+        debug[1] = pif_performance._use_rate;
         debug[3] = ((g_crystal_clock / 1000000) * 1000) + (g_core_clock / 1000000);         // XX0YY [crystal clock : core clock]
         for (i = 0; i < 4; i++)
-            _Serialize16(p_port, debug[i]);      // 4 variables are here for general monitoring purpose
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 8);
+            pifMsp_AddAnswer16(p_owner, debug[i]);      // 4 variables are here for general monitoring purpose
         break;
 
     // Additional commands that are not compatible with MultiWii
     case MSP_ACC_TRIM:
-        _Serialize16(p_port, cfg.angleTrim[PITCH]);
-        _Serialize16(p_port, cfg.angleTrim[ROLL]);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 4);
+        pifMsp_AddAnswer16(p_owner, cfg.angleTrim[PITCH]);
+        pifMsp_AddAnswer16(p_owner, cfg.angleTrim[ROLL]);
         break;
 
     case MSP_UID:
-        _Serialize32(p_port, g_unique_id[0]);
-        _Serialize32(p_port, g_unique_id[1]);
-        _Serialize32(p_port, g_unique_id[2]);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 12);
+        pifMsp_AddAnswer32(p_owner, g_unique_id[0]);
+        pifMsp_AddAnswer32(p_owner, g_unique_id[1]);
+        pifMsp_AddAnswer32(p_owner, g_unique_id[2]);
         break;
 
 #ifdef GPS
     case MSP_GPSSVINFO:
-        _Serialize8(p_port, GPS_numCh);
+        pifMsp_AddAnswer8(p_owner, GPS_numCh);
         for (i = 0; i < GPS_numCh; i++) {
-            _Serialize8(p_port, GPS_svinfo_chn[i]);
-            _Serialize8(p_port, GPS_svinfo_svid[i]);
-            _Serialize8(p_port, GPS_svinfo_quality[i]);
-            _Serialize8(p_port, GPS_svinfo_cno[i]);
+            pifMsp_AddAnswer8(p_owner, GPS_svinfo_chn[i]);
+            pifMsp_AddAnswer8(p_owner, GPS_svinfo_svid[i]);
+            pifMsp_AddAnswer8(p_owner, GPS_svinfo_quality[i]);
+            pifMsp_AddAnswer8(p_owner, GPS_svinfo_cno[i]);
         }
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 1 + (GPS_numCh * 4));
         // Poll new SVINFO from GPS
         gpsPollSvinfo();
         break;
     case MSP_GPSDEBUGINFO:
         if (sensors(SENSOR_GPS)) {
-            _Serialize32(p_port, GPS_update_rate[1] - GPS_update_rate[0]);
-            _Serialize32(p_port, GPS_svinfo_rate[1] - GPS_svinfo_rate[0]);
+            pifMsp_AddAnswer32(p_owner, GPS_update_rate[1] - GPS_update_rate[0]);
+            pifMsp_AddAnswer32(p_owner, GPS_svinfo_rate[1] - GPS_svinfo_rate[0]);
         } else {
-            _Serialize32(p_port, 0);
-            _Serialize32(p_port, 0);
+            pifMsp_AddAnswer32(p_owner, 0);
+            pifMsp_AddAnswer32(p_owner, 0);
         }
-        _Serialize32(p_port, GPS_HorizontalAcc);
-        _Serialize32(p_port, GPS_VerticalAcc);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 16);
+        pifMsp_AddAnswer32(p_owner, GPS_HorizontalAcc);
+        pifMsp_AddAnswer32(p_owner, GPS_VerticalAcc);
         break;
 #endif  // GPS
 
     case MSP_SET_CONFIG:
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
-        mcfg.mixerConfiguration = _Read8(p_port); // multitype
+        mcfg.mixerConfiguration = pifMsp_ReadData8(p_packet); // multitype
         featureClearAll();
-        featureSet(_Read32(p_port)); // features bitmap
-        mcfg.serialrx_type = _Read8(p_port); // serialrx_type
-        mcfg.board_align_roll = _Read16(p_port); // board_align_roll
-        mcfg.board_align_pitch = _Read16(p_port); // board_align_pitch
-        mcfg.board_align_yaw = _Read16(p_port); // board_align_yaw
-        mcfg.currentscale = _Read16(p_port);
-        mcfg.currentoffset = _Read16(p_port);
-        mcfg.motor_pwm_rate = _Read16(p_port);
-        cfg.rollPitchRate[0] = _Read8(p_port);
-        cfg.rollPitchRate[1] = _Read8(p_port);
-        mcfg.power_adc_channel = _Read8(p_port);
-        cfg.small_angle = _Read8(p_port);
-        tmp = _Read16(p_port);
+        featureSet(pifMsp_ReadData32(p_packet)); // features bitmap
+        mcfg.serialrx_type = pifMsp_ReadData8(p_packet); // serialrx_type
+        mcfg.board_align_roll = pifMsp_ReadData16(p_packet); // board_align_roll
+        mcfg.board_align_pitch = pifMsp_ReadData16(p_packet); // board_align_pitch
+        mcfg.board_align_yaw = pifMsp_ReadData16(p_packet); // board_align_yaw
+        mcfg.currentscale = pifMsp_ReadData16(p_packet);
+        mcfg.currentoffset = pifMsp_ReadData16(p_packet);
+        mcfg.motor_pwm_rate = pifMsp_ReadData16(p_packet);
+        cfg.rollPitchRate[0] = pifMsp_ReadData8(p_packet);
+        cfg.rollPitchRate[1] = pifMsp_ReadData8(p_packet);
+        mcfg.power_adc_channel = pifMsp_ReadData8(p_packet);
+        cfg.small_angle = pifMsp_ReadData8(p_packet);
+        tmp = pifMsp_ReadData16(p_packet);
         if (tmp != mcfg.looptime) {
             if (mcfg.looptime && tmp) {
                 pifTask_ChangePeriod(g_task_compute_imu, tmp);
@@ -868,64 +750,61 @@ void evtMspReceive(PifMsp* p_owner, PifMspPacket* p_packet)
             }
             mcfg.looptime = tmp;
         }
-        cfg.locked_in = _Read8(p_port);
+        cfg.locked_in = pifMsp_ReadData8(p_packet);
         /// ???
         break;
 
     case MSP_CONFIG:
-        _Serialize8(p_port, mcfg.mixerConfiguration);
-        _Serialize32(p_port, featureMask());
-        _Serialize8(p_port, mcfg.serialrx_type);
-        _Serialize16(p_port, mcfg.board_align_roll);
-        _Serialize16(p_port, mcfg.board_align_pitch);
-        _Serialize16(p_port, mcfg.board_align_yaw);
-        _Serialize16(p_port, mcfg.currentscale);
-        _Serialize16(p_port, mcfg.currentoffset);
-        _Serialize16(p_port, mcfg.motor_pwm_rate);
-        _Serialize8(p_port, cfg.rollPitchRate[0]);
-        _Serialize8(p_port, cfg.rollPitchRate[1]);
-        _Serialize8(p_port, mcfg.power_adc_channel);
-        _Serialize8(p_port, cfg.small_angle);
-        _Serialize16(p_port, mcfg.looptime);
-        _Serialize8(p_port, cfg.locked_in);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 1 + 4 + 1 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 1 + 1 + 2 + 1);
+        pifMsp_AddAnswer8(p_owner, mcfg.mixerConfiguration);
+        pifMsp_AddAnswer32(p_owner, featureMask());
+        pifMsp_AddAnswer8(p_owner, mcfg.serialrx_type);
+        pifMsp_AddAnswer16(p_owner, mcfg.board_align_roll);
+        pifMsp_AddAnswer16(p_owner, mcfg.board_align_pitch);
+        pifMsp_AddAnswer16(p_owner, mcfg.board_align_yaw);
+        pifMsp_AddAnswer16(p_owner, mcfg.currentscale);
+        pifMsp_AddAnswer16(p_owner, mcfg.currentoffset);
+        pifMsp_AddAnswer16(p_owner, mcfg.motor_pwm_rate);
+        pifMsp_AddAnswer8(p_owner, cfg.rollPitchRate[0]);
+        pifMsp_AddAnswer8(p_owner, cfg.rollPitchRate[1]);
+        pifMsp_AddAnswer8(p_owner, mcfg.power_adc_channel);
+        pifMsp_AddAnswer8(p_owner, cfg.small_angle);
+        pifMsp_AddAnswer16(p_owner, mcfg.looptime);
+        pifMsp_AddAnswer8(p_owner, cfg.locked_in);
         /// ???
         break;
 
     case MSP_RCMAP:
         for (i = 0; i < MAX_SERIAL_INPUTS; i++)
-            _Serialize8(p_port, mcfg.rcmap[i]);
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, MAX_SERIAL_INPUTS);
+            pifMsp_AddAnswer8(p_owner, mcfg.rcmap[i]);
         break;
 
     case MSP_SET_RCMAP:
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
         for (i = 0; i < MAX_SERIAL_INPUTS; i++)
-            mcfg.rcmap[i] = _Read8(p_port);
+            mcfg.rcmap[i] = pifMsp_ReadData8(p_packet);
         break;
 
     case MSP_REBOOT:
-        pifMsp_MakeAnswer(p_owner, p_packet, NULL, 0);
         pendReboot = true;
         break;
 
     case MSP_BUILDINFO:
         for (i = 0; i < 11; i++)
-            _Serialize8(p_port, build[i]); // MMM DD YYYY as ascii, MMM = Jan/Feb... etc
-        _Serialize32(p_port, 0); // future exp
-        _Serialize32(p_port, 0); // future exp
-        pifMsp_MakeAnswer(p_owner, p_packet, p_port->tx_packet, 11 + 4 + 4);
+            pifMsp_AddAnswer8(p_owner, build[i]); // MMM DD YYYY as ascii, MMM = Jan/Feb... etc
+        pifMsp_AddAnswer32(p_owner, 0); // future exp
+        pifMsp_AddAnswer32(p_owner, 0); // future exp
         break;
 
     default:                   // we do not know how to handle the (valid) message, indicate error MSP $M!
         pifMsp_MakeError(p_owner, p_packet);
         break;
     }
+    pifMsp_SendAnswer(p_owner);
 }
 
-static void evtMspOtherPacket(PifMsp* p_owner, uint8_t data)
+static void evtMspOtherPacket(PifMsp* p_owner, uint8_t data, PifIssuerP p_issuer)
 {
     (void)p_owner;
+    (void)p_issuer;
 
     if (f.ARMED) return;
 

@@ -1,5 +1,5 @@
 #include "board.h"
-#include "mw.h"
+#include "link_driver.h"
 
 #include "drv_i2c.h"
 
@@ -18,7 +18,7 @@ bool ledringDetect(void)
     return true;
 }
 
-void ledringState(void)
+void ledringState(int16_t heading, int16_t* angle, uint8_t armed)
 {
     uint8_t b[10];
     static uint8_t state;
@@ -37,7 +37,7 @@ void ledringState(void)
     } else if (state == 2) {
         b[0] = 'd';     // all unicolor GREEN
         b[1] = 1;
-        if (f.ARMED)
+        if (armed)
             b[2] = 1;
         else
             b[2] = 0;

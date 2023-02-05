@@ -24,6 +24,9 @@ uint32_t micros(void);
 uint32_t rccReadBkpDr(void);
 void rccWriteBkpDr(uint32_t value);
 
+// storage
+PifStorage* storageInit();
+
 void productionDebug(void);
 
 // current crystal frequency - 8 or 12MHz
