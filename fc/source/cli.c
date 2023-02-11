@@ -75,26 +75,30 @@ static const char *const sensorNames[] = {
 
 // should be sorted a..z for bsearch()
 const PifLogCmdEntry c_psCmdTable[] = {
-    { "aux", cliAux, "feature_name auxflag or blank for list" },
-    { "cmix", cliCMix, "design custom mixer" },
-    { "defaults", cliDefaults, "reset to defaults and reboot" },
-    { "dump", cliDump, "print configurable settings in a pastable form" },
-    { "exit", cliExit, "" },
-    { "feature", cliFeature, "list or -val or val" },
+	{ "help", pifLog_CmdHelp, "This command", NULL },
+	{ "version", pifLog_CmdPrintVersion, "Print version", NULL },
+	{ "task", pifLog_CmdPrintTask, "Print task", NULL },
+	{ "status", pifLog_CmdSetStatus, "Set and print status", NULL },
+    { "aux", cliAux, "feature_name auxflag or blank for list", NULL },
+    { "cmix", cliCMix, "design custom mixer", NULL },
+    { "defaults", cliDefaults, "reset to defaults and reboot", NULL },
+    { "dump", cliDump, "print configurable settings in a pastable form", NULL },
+    { "exit", cliExit, "", NULL },
+    { "feature", cliFeature, "list or -val or val", NULL },
 #ifdef GPS
-    { "gpspassthrough", cliGpsPassthrough, "passthrough gps to serial" },
+    { "gpspassthrough", cliGpsPassthrough, "passthrough gps to serial", NULL },
 #endif
-    { "map", cliMap, "mapping of rc channel order" },
-    { "mixer", cliMixer, "mixer name or list" },
-    { "motor", cliMotor, "get/set motor output value" },
-    { "profile", cliProfile, "index (0 to 2)" },
-    { "save", cliSave, "save and reboot" },
-    { "servo", cliServo, "edit servo configuration" },
-    { "set", cliSet, "name=value or blank or * for list" },
-    { "smix", cliServoMix, "design custom servo mixer" },
-    { "status", cliStatus, "show system status" },
-    { "version", cliVersion, "" },
-    { NULL, NULL, NULL }
+    { "map", cliMap, "mapping of rc channel order", NULL },
+    { "mixer", cliMixer, "mixer name or list", NULL },
+    { "motor", cliMotor, "get/set motor output value", NULL },
+    { "profile", cliProfile, "index (0 to 2)", NULL },
+    { "save", cliSave, "save and reboot", NULL },
+    { "servo", cliServo, "edit servo configuration", NULL },
+    { "set", cliSet, "name=value or blank or * for list", NULL },
+    { "smix", cliServoMix, "design custom servo mixer", NULL },
+    { "status", cliStatus, "show system status", NULL },
+    { "version", cliVersion, "", NULL },
+    { NULL, NULL, NULL, NULL }
 };
 
 typedef enum {
