@@ -82,11 +82,12 @@ PIF_WEAK uint16_t actPwmRead(uint8_t channel)
 	return 0;
 }
 
-PIF_WEAK serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode)
+PIF_WEAK serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode, uint8_t period)
 {
 	(void)port;
 	(void)baudRate;
 	(void)mode;
+	(void)period;
 	return NULL;
 }
 

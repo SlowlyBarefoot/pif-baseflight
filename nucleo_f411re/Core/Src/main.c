@@ -134,6 +134,7 @@ int main(void)
     drv_pwm_config_t pwm_params;
     drv_adc_config_t adc_params;
     bool sensorsOK = false;
+    PifTask* p_task;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -249,6 +250,7 @@ int main(void)
 
     g_task_compute_rc = pifTaskManager_Add(TM_EXTERNAL_ORDER, 0, taskComputeRc, NULL, FALSE);
     if (!g_task_compute_rc) FAIL;
+    g_task_compute_rc->name = "RC";
 
     // when using airplane/wing mixer, servo/motor outputs are remapped
     if (mcfg.mixerConfiguration == MULTITYPE_AIRPLANE || mcfg.mixerConfiguration == MULTITYPE_FLYING_WING || mcfg.mixerConfiguration == MULTITYPE_CUSTOM_PLANE)
@@ -344,7 +346,9 @@ int main(void)
     calibratingB = CALIBRATING_BARO_CYCLES;             // 10 seconds init_delay + 200 * 25 ms = 15 seconds before ground pressure settles
     f.SMALL_ANGLE = 1;
 
-    if (!pifTaskManager_Add(TM_PERIOD_MS, 1, taskLoop, NULL, TRUE)) FAIL;         								// 1ms
+    p_task = pifTaskManager_Add(TM_PERIOD_MS, 1, taskLoop, NULL, TRUE);         								// 1ms
+    if (!p_task) FAIL;
+    p_task->name = "Loop";
 
     if (mcfg.looptime) {
     	g_task_compute_imu = pifTaskManager_Add(TM_PERIOD_US, mcfg.looptime, taskComputeImu, NULL, TRUE);
@@ -353,12 +357,14 @@ int main(void)
     	g_task_compute_imu = pifTaskManager_Add(TM_ALWAYS, 0, taskComputeImu, NULL, TRUE);
     }
     if (!g_task_compute_imu) FAIL;
+    g_task_compute_imu->name = "IMU";
     g_task_compute_imu->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
 
 #ifdef MAG
     if (sensors(SENSOR_MAG)) {
         sensor_set.mag.p_task = pifTaskManager_Add(TM_PERIOD_MS, 100, taskMagGetAdc, NULL, TRUE);             // 100ms
         if (!sensor_set.mag.p_task) FAIL;
+        sensor_set.mag.p_task->name = "Mag";
         sensor_set.mag.p_task->disallow_yield_id = DISALLOW_YIELD_ID_I2C;
     }
 #endif
@@ -367,15 +373,19 @@ int main(void)
     if (sensors(SENSOR_BARO)) {
         sensor_set.baro.p_task = pifTaskManager_Add(TM_EXTERNAL_ORDER, 0, taskGetEstimatedAltitude, NULL, FALSE);
         if (!sensor_set.baro.p_task) FAIL;
+        sensor_set.baro.p_task->name = "Baro";
     }
 #endif
 
 #ifdef GPS
     g_task_gps = pifTaskManager_Add(TM_EXTERNAL_ORDER, 0, taskGpsNewData, NULL, FALSE);
     if (!g_task_gps) FAIL;
+    g_task_gps->name = "GPS";
 #endif
 
-    if (!pifTaskManager_Add(TM_PERIOD_MS, 50, taskLedState, NULL, TRUE)) FAIL;									// 50ms
+    p_task = pifTaskManager_Add(TM_PERIOD_MS, 50, taskLedState, NULL, TRUE);									// 50ms
+    if (!p_task) FAIL;
+    p_task->name = "Loop";
 
 #ifdef __PIF_DEBUG__
 	pifLog_Printf(LT_INFO, "Task=%d Timer1ms=%d\n", pifTaskManager_Count(),

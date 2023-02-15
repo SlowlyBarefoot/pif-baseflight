@@ -171,7 +171,7 @@ void actPwmWriteServo(uint8_t index, uint16_t value);
 uint16_t actPwmRead(uint8_t channel);
 
 // uart
-serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode);
+serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode, uint8_t period);
 BOOL serialSetBaudRate(serialPort_t *instance, uint32_t baudRate);
 BOOL serialStartReceiveFunc(PifComm* p_comm);
 BOOL serialStopReceiveFunc(PifComm* p_comm);

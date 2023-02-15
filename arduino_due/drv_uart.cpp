@@ -26,10 +26,10 @@ static uartPort_t uartPort[3];
 
 static BOOL actSerial1SetBaudRate(PifComm* p_comm, uint32_t baudrate)
 {
+	(void)p_comm;
+
 	Serial1.end();
 	Serial1.begin(baudrate);
-
-	pifTask_ChangePeriod(p_comm->_p_task, 115200 / baudrate);
 	return TRUE;
 }
 
@@ -74,10 +74,10 @@ static uartPort_t *serialUSART1(portMode_t mode)
 
 static BOOL actSerial2SetBaudRate(PifComm* p_comm, uint32_t baudrate)
 {
+	(void)p_comm;
+
 	Serial2.end();
 	Serial2.begin(baudrate);
-
-	pifTask_ChangePeriod(p_comm->_p_task, 115200 / baudrate);
 	return TRUE;
 }
 
@@ -123,10 +123,10 @@ static uartPort_t *serialUSART2(portMode_t mode)
 
 static BOOL actSerial3SetBaudRate(PifComm* p_comm, uint32_t baudrate)
 {
+	(void)p_comm;
+
 	Serial3.end();
 	Serial3.begin(baudrate);
-
-	pifTask_ChangePeriod(p_comm->_p_task, 115200 / baudrate);
 	return TRUE;
 }
 
@@ -192,7 +192,7 @@ BOOL logOpen()
 
 #endif
 
-serialPort_t *uartOpen(int num, uint32_t baudRate, portMode_t mode)
+serialPort_t *uartOpen(int num, uint32_t baudRate, portMode_t mode, uint8_t period)
 {
     uartPort_t *s = NULL;
 
@@ -205,6 +205,7 @@ serialPort_t *uartOpen(int num, uint32_t baudRate, portMode_t mode)
 			Serial1.begin(baudRate);
 		}
         s = serialUSART1(mode);
+    	if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, period, TRUE, "Comm-1")) return NULL;
         break;
 
     case UART_PORT_2:
@@ -215,6 +216,7 @@ serialPort_t *uartOpen(int num, uint32_t baudRate, portMode_t mode)
 			Serial2.begin(baudRate);
 		}
         s = serialUSART2(mode);
+    	if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, period, TRUE, "Comm-2")) return NULL;
         break;
 
     case UART_PORT_3:
@@ -225,14 +227,13 @@ serialPort_t *uartOpen(int num, uint32_t baudRate, portMode_t mode)
     		Serial3.begin(baudRate);
     	}
         s = serialUSART3(mode);
+    	if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, period, TRUE, "Comm-3")) return NULL;
         break;
 
     default:
     	return NULL;
     }
     if (!s) return NULL;
-
-	if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, (uint16_t)(115200UL / baudRate), TRUE)) return NULL;	// 1ms = 115200bps
 
 	s->num = num;
     s->port.mode = mode;

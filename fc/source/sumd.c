@@ -33,7 +33,7 @@ static void _evtSumdReceive(PifRc* p_owner, uint16_t* channel, PifIssuerP p_issu
 
 BOOL sumdInit(int uart, rcReadRawDataPtr *callback)
 {
-    core.rcvrport = uartOpen(uart, 115200, MODE_RX);
+    core.rcvrport = uartOpen(uart, 115200, MODE_RX, 2);		// 2ms
     if (!core.rcvrport) return FALSE;
 
     if (!pifRcSumd_Init(&s_sumd, PIF_ID_AUTO)) return FALSE;

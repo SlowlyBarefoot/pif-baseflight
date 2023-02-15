@@ -76,9 +76,9 @@ static const char *const sensorNames[] = {
 // should be sorted a..z for bsearch()
 const PifLogCmdEntry c_psCmdTable[] = {
 	{ "help", pifLog_CmdHelp, "This command", NULL },
-	{ "version", pifLog_CmdPrintVersion, "Print version", NULL },
+	{ "pversion", pifLog_CmdPrintVersion, "Print version", NULL },
 	{ "task", pifLog_CmdPrintTask, "Print task", NULL },
-	{ "status", pifLog_CmdSetStatus, "Set and print status", NULL },
+	{ "pstatus", pifLog_CmdSetStatus, "Set and print status", NULL },
     { "aux", cliAux, "feature_name auxflag or blank for list", NULL },
     { "cmix", cliCMix, "design custom mixer", NULL },
     { "defaults", cliDefaults, "reset to defaults and reboot", NULL },

@@ -203,7 +203,7 @@ void gpsInit(uint8_t port, uint8_t baudrateIndex)
 
     gpsSetPIDs();
     // Open GPS UART, no callback - buffer will be read out in gpsThread()
-    core.gpsport = uartOpen(port, 9600, MODE_RXTX);    // signal GPS "thread" to initialize when it gets to it
+    core.gpsport = uartOpen(port, 9600, MODE_RXTX, 5);    // signal GPS "thread" to initialize when it gets to it, 5ms
     if (mcfg.gps_type == GPS_NMEA && gpsInitData[baudrateIndex].baudrate == 9600) {
     	serialStartReceiveFunc(&core.gpsport->comm);
 

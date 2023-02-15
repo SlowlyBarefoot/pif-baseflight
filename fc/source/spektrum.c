@@ -69,7 +69,7 @@ BOOL spektrumInit(int uart, rcReadRawDataPtr *callback)
     }
 
     // spekUart is set by spektrumBind() which is called very early at startup
-    core.rcvrport = uartOpen(uart, 115200, MODE_RX);
+    core.rcvrport = uartOpen(uart, 115200, MODE_RX, 2);		// 2ms
     if (!core.rcvrport) return FALSE;
 
     if (!pifRcSpektrum_Init(&s_spektrum, PIF_ID_AUTO, Protocol_id)) return FALSE;

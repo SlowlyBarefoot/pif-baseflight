@@ -44,7 +44,7 @@ BOOL sbusInit(int uart, rcReadRawDataPtr *callback)
     for (b = 0; b < SBUS_MAX_CHANNEL; b++)
         sbusChannelData[b] = mcfg.midrc;
 
-    core.rcvrport = uartOpen(uart, 100000, (portMode_t)(MODE_RX | MODE_SBUS));
+    core.rcvrport = uartOpen(uart, 100000, (portMode_t)(MODE_RX | MODE_SBUS), 2);	// 2ms
     if (!core.rcvrport) return FALSE;
 
     if (!pifRcSbus_Init(&s_sbus, PIF_ID_AUTO)) return FALSE;

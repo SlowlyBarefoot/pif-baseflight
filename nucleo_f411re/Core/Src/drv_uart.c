@@ -25,7 +25,6 @@ typedef struct {
 	UART_HandleTypeDef* p_huart;
 	uint16_t tx_frame_size;
 	uint8_t rx_frame;
-	uint8_t rx_threshold;
 	BOOL init;
 } uartPort_t;
 
@@ -66,18 +65,6 @@ static BOOL actUartStartTransfer(PifComm* p_comm)
 	return FALSE;
 }
 
-static BOOL serialUSART(uartPort_t* s, uint32_t baudRate, PifId pif_id)
-{
-	s->init = TRUE;
-	if (!pifComm_Init(&s->port.comm, pif_id)) return FALSE;
-	if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, 1, TRUE)) return FALSE;	// 1ms
-	if (!pifComm_AllocRxBuffer(&s->port.comm, 64, s->rx_threshold)) return FALSE;
-	if (!pifComm_AllocTxBuffer(&s->port.comm, 64)) return FALSE;
-	s->port.comm.act_set_baudrate = actUartSetBaudRate;
-	s->port.comm.act_start_transfer = actUartStartTransfer;
-	return TRUE;
-}
-
 #ifdef __PIF_DEBUG__
 
 static BOOL actLogStartTransfer(PifComm* p_comm)
@@ -108,30 +95,38 @@ BOOL logOpen()
 
 #endif
 
-serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode)
+serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode, uint8_t period)
 {
     uartPort_t *s = NULL;
+	uint16_t rx_size = 16;
+	uint16_t tmp;
+	const char* names[] = { "Comm-1", "Comm-2", "Comm-3" };
 
     if (port == UART_PORT_1) {
         s = &uartPort[0];
         s->p_huart = &huart1;
-        s->rx_threshold = 25;
     }
 #ifndef __PIF_DEBUG__
     else if (port == UART_PORT_2) {
         s = &uartPort[1];
         s->p_huart = &huart2;
-        s->rx_threshold = 10;
     }
 #endif
     else if (port == UART_PORT_3) {
         s = &uartPort[2];
         s->p_huart = &huart6;
-        s->rx_threshold = 25;
     }
     else return NULL;
 
-    if (!serialUSART(s, baudRate, PIF_ID_UART(port - 1))) return FALSE;
+    tmp = period * 115200 / 10000;
+    while (tmp >= rx_size) rx_size <<= 1;
+	s->init = TRUE;
+	if (!pifComm_Init(&s->port.comm, PIF_ID_UART(port - 1))) return FALSE;
+	if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, period, TRUE, names[port - 1])) return FALSE;
+	if (!pifComm_AllocRxBuffer(&s->port.comm, rx_size, rx_size / 2)) return FALSE;
+	if (!pifComm_AllocTxBuffer(&s->port.comm, 64)) return FALSE;
+	s->port.comm.act_set_baudrate = actUartSetBaudRate;
+	s->port.comm.act_start_transfer = actUartStartTransfer;
 
     // callback for IRQ-based RX ONLY
     if (!serialSetBaudRate(&s->port, baudRate)) {

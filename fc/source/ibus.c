@@ -40,7 +40,7 @@ BOOL ibusInit(int uart, rcReadRawDataPtr *callback)
     for (b = 0; b < IBUS_MAX_CHANNEL; b++)
         ibusChannelData[b] = mcfg.midrc;
 
-    core.rcvrport = uartOpen(uart, 115200, MODE_RX);
+    core.rcvrport = uartOpen(uart, 115200, MODE_RX, 2);	// 2ms
     if (!core.rcvrport) return FALSE;
 
     if (!pifRcIbus_Init(&s_ibus, PIF_ID_AUTO)) return FALSE;

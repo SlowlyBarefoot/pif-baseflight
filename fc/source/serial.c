@@ -176,7 +176,7 @@ void serialInit(uint8_t port, uint32_t baudrate, uint8_t flexport)
 {
     int idx;
 
-    core.mainport = uartOpen(port, baudrate, MODE_RXTX);
+    core.mainport = uartOpen(port, baudrate, MODE_RXTX, 2);			// 10ms
     ports[0].port = core.mainport;
 
     if (!pifMsp_Init(&ports[0].pif_msp, &g_timer_1ms, PIF_ID_MSP(0))) return;
@@ -187,7 +187,7 @@ void serialInit(uint8_t port, uint32_t baudrate, uint8_t flexport)
 
     // additional telemetry port available only if spektrum sat isn't already assigned there
     if (flexport) {
-        core.flexport = uartOpen(flexport, baudrate, MODE_RXTX);
+        core.flexport = uartOpen(flexport, baudrate, MODE_RXTX, 10);	// 10ms
         ports[1].port = core.flexport;
 
         if (!pifMsp_Init(&ports[1].pif_msp, &g_timer_1ms, PIF_ID_MSP(1))) return;
@@ -675,7 +675,7 @@ void evtMspReceive(PifMsp* p_owner, PifMspPacket* p_packet, PifIssuerP p_issuer)
 
     case MSP_DEBUG:
         // make use of this crap, output some useful QA statistics
-        if (mcfg.looptime) debug[0] = (int16_t)cycleTime - mcfg.looptime;
+        if (mcfg.looptime) debug[0] = (int16_t)cycleTime - mcfg.looptime + mcfg.looptime / 10;
         else debug[0] = cycleTime;
         debug[1] = pif_performance._use_rate;
         debug[3] = ((g_crystal_clock / 1000000) * 1000) + (g_core_clock / 1000000);         // XX0YY [crystal clock : core clock]

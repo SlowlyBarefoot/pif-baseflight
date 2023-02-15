@@ -153,7 +153,7 @@ uartPort_t *serialUSART3(portMode_t mode)
     return s;
 }
 
-serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode)
+serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode, uint8_t period)
 {
     USART_InitTypeDef USART_InitStructure;
     uartPort_t *s = NULL;
@@ -164,20 +164,21 @@ serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode)
     if (port == UART_PORT_1) {
         s = serialUSART1(mode);
         s->USARTx = USART1;
+        if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, period, TRUE, "Comm-1")) return NULL;
     }
     else if (port == UART_PORT_2) {
         s = serialUSART2(mode);
         s->USARTx = USART2;
+        if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, period, TRUE, "Comm-2")) return NULL;
     }
     else if (port == UART_PORT_3) {
         s = serialUSART3(mode);
         s->USARTx = USART3;
+        if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, period, TRUE, "Comm-3")) return NULL;
     }
     else return NULL;
 
     s->port.p_param = NULL;
-
-    if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, 1, TRUE)) return NULL;
 
     // callback for IRQ-based RX ONLY
     s->port.mode = mode;
