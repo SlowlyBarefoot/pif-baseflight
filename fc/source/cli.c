@@ -463,14 +463,14 @@ static int cliAux(int argc, char *argv[])
 {
     int i, val = 0;
 
-    if (argc == 1) {
+    if (argc == 0) {
         // print out aux channel settings
         for (i = 0; i < CHECKBOXITEMS; i++)
             pifLog_Printf(LT_NONE, "aux %u %u\r\n", i, cfg.activate[i]);
-    } else if (argc > 2) {
-        i = atoi(argv[1]);
+    } else if (argc > 1) {
+        i = atoi(argv[0]);
         if (i < CHECKBOXITEMS) {
-            val = atoi(argv[2]);
+            val = atoi(argv[1]);
             cfg.activate[i] = val;
         } else {
             pifLog_Printf(LT_NONE, "Invalid Feature index: must be < %u\r\n", CHECKBOXITEMS);
@@ -488,7 +488,7 @@ static int cliCMix(int argc, char *argv[])
     char buf[16];
     float mixsum[3];
 
-    if (argc == 1) {
+    if (argc == 0) {
         pifLog_Print(LT_NONE, "Custom mixer: \r\nMotor\tThr\tRoll\tPitch\tYaw\r\n");
         for (i = 0; i < MAX_MOTORS; i++) {
             if (mcfg.customMixer[i].throttle == 0.0f)
@@ -510,18 +510,18 @@ static int cliCMix(int argc, char *argv[])
         for (i = 0; i < 3; i++)
             pifLog_Print(LT_NONE, fabsf(mixsum[i]) > 0.01f ? "NG\t" : "OK\t");
         pifLog_Print(LT_NONE, "\r\n");
-    } else if (strcasecmp(argv[1], "reset") == 0) {
+    } else if (strcasecmp(argv[0], "reset") == 0) {
         // erase custom mixer
         for (i = 0; i < MAX_MOTORS; i++)
             mcfg.customMixer[i].throttle = 0.0f;
-    } else if (strcasecmp(argv[1], "load") == 0) {
-        if (argc > 2) {
+    } else if (strcasecmp(argv[0], "load") == 0) {
+        if (argc > 1) {
             for (i = 0; ; i++) {
                 if (mixerNames[i] == NULL) {
                     pifLog_Print(LT_NONE, "Invalid mixer type...\r\n");
                     break;
                 }
-                if (strcasecmp(argv[2], mixerNames[i]) == 0) {
+                if (strcasecmp(argv[1], mixerNames[i]) == 0) {
                     mixerLoadMix(i);
                     pifLog_Printf(LT_NONE, "Loaded %s mix...\r\n", mixerNames[i]);
                     cliCMix(1, NULL);
@@ -533,22 +533,22 @@ static int cliCMix(int argc, char *argv[])
         	return PIF_LOG_CMD_TOO_FEW_ARGS;
         }
     } else {
-        i = atoi(argv[1]); // get motor number
+        i = atoi(argv[0]); // get motor number
         if (--i < MAX_MOTORS) {
+            if (argc > 1) {
+                mcfg.customMixer[i].throttle = _atof(argv[1]);
+                check++;
+            }
             if (argc > 2) {
-                mcfg.customMixer[i].throttle = _atof(argv[2]);
+                mcfg.customMixer[i].roll = _atof(argv[2]);
                 check++;
             }
             if (argc > 3) {
-                mcfg.customMixer[i].roll = _atof(argv[3]);
+                mcfg.customMixer[i].pitch = _atof(argv[3]);
                 check++;
             }
             if (argc > 4) {
-                mcfg.customMixer[i].pitch = _atof(argv[4]);
-                check++;
-            }
-            if (argc > 5) {
-                mcfg.customMixer[i].yaw = _atof(argv[5]);
+                mcfg.customMixer[i].yaw = _atof(argv[4]);
                 check++;
             }
             if (check != 4) {
@@ -568,7 +568,7 @@ static int cliServo(int argc, char *argv[])
     int i;
     int8_t servoRates[8] = { 30, 30, 100, 100, 100, 100, 100, 100 };
 
-    if (argc == 1) {
+    if (argc == 0) {
         pifLog_Print(LT_NONE, "servo servo_number\tmin\tmiddle\tmax\trate\r\n");
         for (i = 0; i < MAX_SERVOS; i++) {
             pifLog_Printf(LT_NONE, "#%d:\t", i + 1);
@@ -580,7 +580,7 @@ static int cliServo(int argc, char *argv[])
         }
         pifLog_Print(LT_NONE, "\r\n");
         pifLog_Print(LT_NONE, "Reset servos: servo reset\r\n");
-    } else if (strcasecmp(argv[1], "reset") == 0) {
+    } else if (strcasecmp(argv[0], "reset") == 0) {
         // erase servo config
         for (i = 0; i < MAX_SERVOS; i++) {
             cfg.servoConf[i].min = 1020;
@@ -592,8 +592,8 @@ static int cliServo(int argc, char *argv[])
         enum {SERVO = 0, MIN, MIDDLE, MAX, RATE, ARGS_COUNT};
         int args[ARGS_COUNT], check = 0;
 
-        while (check + 1 < argc && check < ARGS_COUNT) {
-            args[check] = atoi(argv[check + 1]);
+        while (check < argc && check < ARGS_COUNT) {
+            args[check] = atoi(argv[check]);
             check++;
         }
 
@@ -625,7 +625,7 @@ static int cliServoMix(int argc, char *argv[])
     int i;
     int args[8], check = 0;
 
-    if (argc == 1) {
+    if (argc == 0) {
         pifLog_Print(LT_NONE, "Custom servo mixer: \r\nchange mixer: smix rule\ttarget_channel\tinput_channel\trate\tspeed\t\tmin\tmax\tbox\r\n");
         pifLog_Print(LT_NONE, "reset mixer: smix reset\r\nload mixer: smix load\r\nchange direction of channel: smix direction\r\n");
         for (i = 0; i < MAX_SERVO_RULES; i++) {
@@ -641,19 +641,19 @@ static int cliServoMix(int argc, char *argv[])
             pifLog_Printf(LT_NONE, "%d\r\n", mcfg.customServoMixer[i].box);
         }
         pifLog_Print(LT_NONE, "\r\n");
-    } else if (strcasecmp(argv[1], "reset") == 0) {
+    } else if (strcasecmp(argv[0], "reset") == 0) {
         // erase custom mixer
         memset(mcfg.customServoMixer, 0, sizeof(mcfg.customServoMixer));
         for (i = 0; i < MAX_SERVOS; i++)
             cfg.servoConf[i].direction = 0;
-    } else if (strcasecmp(argv[1], "load") == 0) {
-        if (argc > 2) {
+    } else if (strcasecmp(argv[0], "load") == 0) {
+        if (argc > 1) {
             for (i = 0; ; i++) {
                 if (mixerNames[i] == NULL) {
                     pifLog_Print(LT_NONE, "Invalid mixer type...\r\n");
                     break;
                 }
-                if (strcasecmp(argv[2], mixerNames[i]) == 0) {
+                if (strcasecmp(argv[1], mixerNames[i]) == 0) {
                     servoMixerLoadMix(i);
                     pifLog_Printf(LT_NONE, "Loaded %s mix...\r\n", mixerNames[i]);
                     cliServoMix(1, NULL);
@@ -664,12 +664,12 @@ static int cliServoMix(int argc, char *argv[])
         else {
         	return PIF_LOG_CMD_TOO_FEW_ARGS;
         }
-    } else if (strcasecmp(argv[1], "direction") == 0) {
+    } else if (strcasecmp(argv[0], "direction") == 0) {
         enum {SERVO = 0, INPUT_, DIRECTION, ARGS_COUNT};
         int servoIndex, channel;
         char* smix_dir[2] = { "smix", "direction" };
 
-        if (argc == 2) {
+        if (argc == 1) {
             pifLog_Print(LT_NONE, "change the direction a servo reacts to a input channel: \r\nservo input -1|1\r\n");
             pifLog_Print(LT_NONE, "s");
             for (channel = 0; channel < INPUT_ITEMS; channel++)
@@ -685,8 +685,8 @@ static int cliServoMix(int argc, char *argv[])
             return PIF_LOG_CMD_NO_ERROR;
         }
 
-        while (check + 1 < argc && check < ARGS_COUNT) {
-            args[check] = atoi(argv[check + 1]);
+        while (check < argc && check < ARGS_COUNT) {
+            args[check] = atoi(argv[check]);
             check++;
         }
 
@@ -708,8 +708,8 @@ static int cliServoMix(int argc, char *argv[])
         cliServoMix(2, smix_dir);
     } else {
         enum {RULE = 0, TARGET, INPUT_, RATE, SPEED, MIN, MAX, BOX, ARGS_COUNT};
-        while (check + 1 < argc && check < ARGS_COUNT) {
-            args[check] = atoi(argv[check + 1]);
+        while (check < argc && check < ARGS_COUNT) {
+            args[check] = atoi(argv[check]);
             check++;
         }
 
@@ -875,7 +875,7 @@ static int cliFeature(int argc, char *argv[])
 
     mask = featureMask();
 
-    if (argc == 1) {
+    if (argc == 0) {
         pifLog_Print(LT_NONE, "Enabled features: ");
         for (i = 0; ; i++) {
             if (featureNames[i] == NULL)
@@ -884,7 +884,7 @@ static int cliFeature(int argc, char *argv[])
                 pifLog_Printf(LT_NONE, "%s ", featureNames[i]);
         }
         pifLog_Print(LT_NONE, "\r\n");
-    } else if (strcasecmp(argv[1], "list") == 0) {
+    } else if (strcasecmp(argv[0], "list") == 0) {
         pifLog_Print(LT_NONE, "Available features: ");
         for (i = 0; ; i++) {
             if (featureNames[i] == NULL)
@@ -894,7 +894,7 @@ static int cliFeature(int argc, char *argv[])
         pifLog_Print(LT_NONE, "\r\n");
     } else {
         bool remove = false;
-        if (argv[1][0] == '-') {
+        if (argv[0][0] == '-') {
             // remove feature
             remove = true;
         }
@@ -904,7 +904,7 @@ static int cliFeature(int argc, char *argv[])
                 pifLog_Print(LT_NONE, "Invalid feature name...\r\n");
                 break;
             }
-            if (strcasecmp(argv[1] + 1, featureNames[i]) == 0) {
+            if (strcasecmp(argv[0] + 1, featureNames[i]) == 0) {
                 if (remove) {
                     featureClear(1 << i);
                     pifLog_Print(LT_NONE, "Disabled ");
@@ -949,21 +949,21 @@ static int cliMap(int argc, char *argv[])
     uint32_t i;
     char out[9];
 
-    if (argc < 2) return PIF_LOG_CMD_TOO_FEW_ARGS;
+    if (argc < 1) return PIF_LOG_CMD_TOO_FEW_ARGS;
 
-    len = strlen(argv[1]);
+    len = strlen(argv[0]);
 
     if (len == mcfg.rc_channel_count) {
         // uppercase it
         for (i = 0; i < mcfg.rc_channel_count; i++)
-            argv[1][i] = toupper((unsigned char)argv[1][i]);
+            argv[0][i] = toupper((unsigned char)argv[0][i]);
         for (i = 0; i < mcfg.rc_channel_count; i++) {
-            if (strchr(rcChannelLetters, argv[1][i]) && !strchr(argv[1] + i + 1, argv[1][i]))
+            if (strchr(rcChannelLetters, argv[0][i]) && !strchr(argv[0] + i + 1, argv[0][i]))
                 continue;
             pifLog_Print(LT_NONE, "Must be any order of AETR1234\r\n");
             return PIF_LOG_CMD_NO_ERROR;
         }
-        parseRcChannels(argv[1]);
+        parseRcChannels(argv[0]);
     }
     pifLog_Print(LT_NONE, "Current assignment: ");
     for (i = 0; i < mcfg.rc_channel_count; i++)
@@ -977,10 +977,10 @@ static int cliMixer(int argc, char *argv[])
 {
     int i;
 
-    if (argc == 1) {
+    if (argc == 0) {
         pifLog_Printf(LT_NONE, "Current mixer: %s\r\n", mixerNames[mcfg.mixerConfiguration - 1]);
         return PIF_LOG_CMD_NO_ERROR;
-    } else if (strcasecmp(argv[1], "list") == 0) {
+    } else if (strcasecmp(argv[0], "list") == 0) {
         pifLog_Print(LT_NONE, "Available mixers: ");
         for (i = 0; ; i++) {
             if (mixerNames[i] == NULL)
@@ -996,7 +996,7 @@ static int cliMixer(int argc, char *argv[])
             pifLog_Print(LT_NONE, "Invalid mixer type...\r\n");
             return PIF_LOG_CMD_NO_ERROR;
         }
-        if (strcasecmp(argv[1], mixerNames[i]) == 0) {
+        if (strcasecmp(argv[0], mixerNames[i]) == 0) {
             mcfg.mixerConfiguration = i + 1;
             pifLog_Printf(LT_NONE, "Mixer set to %s\r\n", mixerNames[i]);
 
@@ -1023,18 +1023,18 @@ static int cliMotor(int argc, char *argv[])
     int motor_index = 0;
     int motor_value = 0;
 
-    if (argc == 1) {
+    if (argc == 0) {
         pifLog_Print(LT_NONE, "Usage:\r\nmotor index [value] - show [or set] motor value\r\n");
         return PIF_LOG_CMD_NO_ERROR;
     }
 
-    if (argc < 3) {
+    if (argc < 2) {
         pifLog_Printf(LT_NONE, "Motor %d is set at %d\r\n", motor_index, motor_disarmed[motor_index]);
         return PIF_LOG_CMD_NO_ERROR;
     }
 
-    motor_index = atoi(argv[1]);
-    motor_value = atoi(argv[2]);
+    motor_index = atoi(argv[0]);
+    motor_value = atoi(argv[1]);
 
     if (motor_index < 0 || motor_index >= MAX_MOTORS) {
         pifLog_Printf(LT_NONE, "No such motor, use a number [0, %d]\r\n", MAX_MOTORS);
@@ -1055,10 +1055,10 @@ static int cliProfile(int argc, char *argv[])
 {
     int i;
 
-    if (argc == 1) {
+    if (argc == 0) {
         pifLog_Printf(LT_NONE, "Current profile: %d\r\n", mcfg.current_profile);
     } else {
-        i = atoi(argv[1]);
+        i = atoi(argv[0]);
         if (i >= 0 && i <= 2) {
             mcfg.current_profile = i;
             writeEEPROM(0, false);
@@ -1150,22 +1150,22 @@ static int cliSet(int argc, char *argv[])
     int32_t value = 0;
     float valuef = 0;
 
-    if (argc == 1 || (argc == 2 && argv[1][0] == '*')) {
+    if (argc == 0 || (argc == 1 && argv[0][0] == '*')) {
         pifLog_Print(LT_NONE, "Current settings: \r\n");
         for (i = 0; i < VALUE_COUNT; i++) {
             val = &valueTable[i];
             pifLog_Printf(LT_NONE, "%s = ", valueTable[i].name);
-            cliPrintVar(val, strlen(argv[1])); // when len is 1 (when * is passed as argument), it will print min/max values as well, for gui
+            cliPrintVar(val, strlen(argv[0])); // when len is 1 (when * is passed as argument), it will print min/max values as well, for gui
             pifLog_Print(LT_NONE, "\r\n");
         }
-    } else if ((eqptr = strstr(argv[1], "=")) != NULL) {
+    } else if ((eqptr = strstr(argv[0], "=")) != NULL) {
         // has equal, set var
         eqptr++;
         value = atoi(eqptr);
         valuef = _atof(eqptr);
         for (i = 0; i < VALUE_COUNT; i++) {
             val = &valueTable[i];
-            if (strncasecmp(argv[1], valueTable[i].name, strlen(valueTable[i].name)) == 0) {
+            if (strncasecmp(argv[0], valueTable[i].name, strlen(valueTable[i].name)) == 0) {
                 if (valuef >= valueTable[i].min && valuef <= valueTable[i].max) { // here we compare the float value since... it should work, RIGHT?
                     int_float_value_t tmp;
                     if (valueTable[i].type == VAR_FLOAT)
@@ -1186,7 +1186,7 @@ static int cliSet(int argc, char *argv[])
     } else {
         // no equals, check for matching variables.
         for (i = 0; i < VALUE_COUNT; i++) {
-            if (strstr(valueTable[i].name, argv[1])) {
+            if (strstr(valueTable[i].name, argv[0])) {
                 val = &valueTable[i];
                 pifLog_Printf(LT_NONE, "%s = ", valueTable[i].name);
                 cliPrintVar(val, 0);
