@@ -9,7 +9,6 @@
 #ifndef __PIF_NO_LOG__
 	#include "core/pif_log.h"
 #endif
-#include "gps/pif_gps_nmea.h"
 #include "gps/pif_gps_ublox.h"
 
 
@@ -48,9 +47,12 @@ const uint8_t kCfgMsg[][3] = {
         { GUCI_NMEA_STD, GUMI_NMEA_GGA, 0x00 }, // Global positioning system fix data
         { GUCI_NMEA_STD, GUMI_NMEA_GSA, 0x00 }, // GNSS DOP and Active Satellites
         { GUCI_NMEA_STD, GUMI_NMEA_RMC, 0x00 }, // Recommended Minimum data
+
         { GUCI_NAV, GUMI_NAV_POSLLH, 0x01 },    // set POSLLH MSG rate
         { GUCI_NAV, GUMI_NAV_STATUS, 0x01 },    // set STATUS MSG rate
         { GUCI_NAV, GUMI_NAV_SOL, 0x01 },       // set SOL MSG rate
+        // { GUCI_NAV, GUMI_NAV_SVINFO, 0x01 },   // set SVINFO MSG rate (every cycle - high bandwidth)
+        { GUCI_NAV, GUMI_NAV_SVINFO, 0x05 },    // set SVINFO MSG rate (evey 5 cycles - low bandwidth)
         { GUCI_NAV, GUMI_NAV_VELNED, 0x01 }     // set VELNED MSG rate
 };
 
@@ -62,7 +64,7 @@ const uint8_t kCfgRate[] = {
 
 const uint8_t kCfgNav5[] = {
         0xFF, 0xFF,						// mask
-        0x06, 							// dynModel
+        0x03, 							// dynModel
         0x03, 							// fixMode
         0x00, 0x00,	0x00, 0x00, 		// fixedAlt
         0x10, 0x27, 0x00, 0x00,			// fixedAltVar
@@ -73,11 +75,11 @@ const uint8_t kCfgNav5[] = {
         0x64, 0x00, 					// pAcc
         0x2C, 0x01,						// tAcc
         0x00,							// staticHoldThresh
-        0x00,							// dgnssTimeout
+        0x3C,							// dgnssTimeout
         0x00,  							// cnoThreshNumSVs
         0x00, 							// cnoThresh
         0x00, 0x00,	 					// reserved1
-        0x00, 0x00,						// staticHoldMaxDist
+        0xC8, 0x00,						// staticHoldMaxDist
         0x00, 							// utcStandard
         0x00, 0x00, 0x00, 0x00, 0x00	// reserved2
 };
@@ -131,7 +133,6 @@ typedef struct gpsData_t {
 } gpsData_t;
 
 static gpsData_t gpsData;
-static PifGpsNmea gps_nmea;
 static PifGpsUblox gps_ublox;
 
 
@@ -204,40 +205,28 @@ void gpsInit(uint8_t port, uint8_t baudrateIndex)
     gpsSetPIDs();
     // Open GPS UART, no callback - buffer will be read out in gpsThread()
     core.gpsport = uartOpen(port, 9600, MODE_RXTX, 5);    // signal GPS "thread" to initialize when it gets to it, 5ms
-    if (mcfg.gps_type == GPS_NMEA && gpsInitData[baudrateIndex].baudrate == 9600) {
-    	serialStartReceiveFunc(&core.gpsport->comm);
+    if (!core.gpsport) goto fail;
+    if (!pifGpsUblox_Init(&gps_ublox, PIF_ID_AUTO)) goto fail;
+    pifGpsUblox_AttachComm(&gps_ublox, &core.gpsport->comm);
+    gps_ublox._gps.evt_receive = _evtGpsReceive;
 
-        if (!pifGpsNmea_Init(&gps_nmea, PIF_ID_AUTO)) return;
-        gps_nmea._gps.evt_nmea_msg_id = PIF_GPS_NMEA_MSG_ID_GGA;
-        pifGpsNmea_AttachComm(&gps_nmea, &core.gpsport->comm);
-        gps_nmea._gps.evt_receive = _evtGpsReceive;
-
-		// signal GPS "thread" to initialize when it gets to it
-		gpsSetState(GPS_CONFIGURATION);
-    }
-    else {
-        if (!pifGpsUblox_Init(&gps_ublox, PIF_ID_AUTO)) return;
-        pifGpsUblox_AttachComm(&gps_ublox, &core.gpsport->comm);
-        gps_ublox._gps.evt_receive = _evtGpsReceive;
-
-		// signal GPS "thread" to initialize when it gets to it
-		gpsSetState(GPS_INITIALIZING);
-    }
+    // signal GPS "thread" to initialize when it gets to it
+    gpsSetState(GPS_INITIALIZING);
 
     // copy ubx sbas config string to use
     if (mcfg.gps_ubx_sbas >= SBAS_LAST)
         mcfg.gps_ubx_sbas = SBAS_AUTO;
+
+    return;
+
+fail:    
+    sensorsClear(SENSOR_GPS);
 }
 
 static void gpsInitNmea(void)
 {
-    if (gpsInitData[gpsData.baudrateIndex].baudrate == 9600) {
-        pifGps_SetTimeout(&gps_nmea._gps, &g_timer_1ms, GPS_TIMEOUT, _evtGpsTimeout);
-    }
-    else {
-        gps_ublox._gps.evt_nmea_msg_id = PIF_GPS_NMEA_MSG_ID_GGA;
-        pifGps_SetTimeout(&gps_ublox._gps, &g_timer_1ms, GPS_TIMEOUT, _evtGpsTimeout);
-    }
+    gps_ublox._gps.evt_nmea_msg_id = PIF_GPS_NMEA_MSG_ID_GGA;
+    pifGps_SetTimeout(&gps_ublox._gps, &g_timer_1ms, GPS_TIMEOUT, _evtGpsTimeout);
     gpsSetState(GPS_RECEIVINGDATA);
 }
 
@@ -419,12 +408,7 @@ void gpsThread(void)
             break;
 
         case GPS_LOSTCOMMS:
-            if (mcfg.gps_type == GPS_NMEA && gpsInitData[gpsData.baudrateIndex].baudrate == 9600) {
-                pifGps_SetTimeout(&gps_nmea._gps, &g_timer_1ms, 0, NULL);
-            }
-            else {
-                pifGps_SetTimeout(&gps_ublox._gps, &g_timer_1ms, 0, NULL);
-            }
+            pifGps_SetTimeout(&gps_ublox._gps, &g_timer_1ms, 0, NULL);
             gpsData.errors++;
             // try another rate (Only if autobauding is enabled)
             if (mcfg.gps_autobaud) {
@@ -811,7 +795,6 @@ static void _EvtPrintFrame(char* p_frame)
 int8_t gpsSetPassthrough(void)
 {
     static bool state = false;
-	PifGps* p_gps;
 
     if (gpsData.state != GPS_RECEIVINGDATA)
         return -1;
@@ -820,14 +803,13 @@ int8_t gpsSetPassthrough(void)
     actLed1State(OFF);
 
     if (mcfg.gps_type == GPS_NMEA) {
-		p_gps = (gpsInitData[gpsData.baudrateIndex].baudrate == 9600) ? &gps_nmea._gps : &gps_ublox._gps;
         if (state) {
-            p_gps->evt_frame = NULL;
+            gps_ublox._gps.evt_frame = NULL;
             state = false;
             return 0;
         }
         else {
-            p_gps->evt_frame = _EvtPrintFrame;
+            gps_ublox._gps.evt_frame = _EvtPrintFrame;
             state = true;
             return 1;
         }

@@ -77,7 +77,6 @@ COMMON_SRC	 = buzzer.c \
 		   pif_noise_filter.c \
 		   pif_noise_filter_int32.c \
 		   pif_gps.c \
-		   pif_gps_nmea.c \
 		   pif_gps_ublox.c \
 		   pif_msp.c \
 		   pif_rc.c \

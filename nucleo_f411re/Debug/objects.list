@@ -40,7 +40,6 @@
 "./Core/pif/source/filter/pif_noise_filter.o"
 "./Core/pif/source/filter/pif_noise_filter_int32.o"
 "./Core/pif/source/gps/pif_gps.o"
-"./Core/pif/source/gps/pif_gps_nmea.o"
 "./Core/pif/source/gps/pif_gps_ublox.o"
 "./Core/pif/source/protocol/pif_msp.o"
 "./Core/pif/source/rc/pif_rc.o"

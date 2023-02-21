@@ -296,11 +296,6 @@
 			<locationURI>PARENT-2-PROJECT_LOC/pif/include/gps/pif_gps.h</locationURI>
 		</link>
 		<link>
-			<name>Core/pif/include/gps/pif_gps_nmea.h</name>
-			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/pif/include/gps/pif_gps_nmea.h</locationURI>
-		</link>
-		<link>
 			<name>Core/pif/include/gps/pif_gps_ublox.h</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/pif/include/gps/pif_gps_ublox.h</locationURI>
@@ -454,11 +449,6 @@
 			<name>Core/pif/source/gps/pif_gps.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/pif/source/gps/pif_gps.c</locationURI>
-		</link>
-		<link>
-			<name>Core/pif/source/gps/pif_gps_nmea.c</name>
-			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/pif/source/gps/pif_gps_nmea.c</locationURI>
 		</link>
 		<link>
 			<name>Core/pif/source/gps/pif_gps_ublox.c</name>
