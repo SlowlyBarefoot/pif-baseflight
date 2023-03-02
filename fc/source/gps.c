@@ -117,12 +117,6 @@ enum {
     GPS_LOSTCOMMS,
 };
 
-enum {
-	GUCR_NONE,
-	GUCR_ACK,
-	GUCR_NAK
-};
-
 typedef struct gpsData_t {
     uint8_t state;                  // GPS thread state. Used for detecting cable disconnects and configuring attached devices
     uint8_t baudrateIndex;          // index into auto-detecting or current baudrate
@@ -184,11 +178,8 @@ static BOOL _evtGpsUbxReceive(PifGpsUblox* p_owner, PifGpsUbxPacket* p_packet)
 	case GUCI_ACK:
 		switch (p_packet->msg_id) {
 		case GUMI_ACK_ACK:
-			gpsData.cfg_result = GUCR_ACK;
-			return FALSE;
-
 		case GUMI_ACK_NAK:
-			gpsData.cfg_result = GUCR_NAK;
+			gpsData.cfg_result = p_packet->msg_id;
 			return FALSE;
 		}
 		break;
@@ -310,7 +301,7 @@ static void gpsInitUblox(void)
 			}
 		}
 		else {
-			if (gpsData.cfg_result == GUCR_ACK) {
+			if (gpsData.cfg_result == GUMI_ACK_ACK) {
 #ifdef __PIF_DEBUG__
 				pifLog_Printf(LT_INFO, "GPS(%u) ACK:%u T=%lu", __LINE__, gpsData.step, pif_cumulative_timer1ms - gpsData.state_ts);
 #endif
@@ -318,7 +309,7 @@ static void gpsInitUblox(void)
 				if (gpsData.step == 20 + kCfgMsgNavSize) gpsData.step = 30;
 				gpsData.state_ts = pif_cumulative_timer1ms;
 			}
-			else if (gpsData.cfg_result == GUCR_NAK) {
+			else if (gpsData.cfg_result == GUMI_ACK_NAK) {
 				pif_error = E_RECEIVE_NACK;
 				line = __LINE__;
 #ifdef __PIF_DEBUG__
@@ -341,7 +332,7 @@ static void gpsInitUblox(void)
 		}
 		else if (gpsData.step < 10 + kCfgMsgNmeaSize) {
 			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_MSG, sizeof(kCfgMsgNmea[gpsData.step - 10]), (uint8_t*)kCfgMsgNmea[gpsData.step - 10], FALSE)) {
-                gpsData.cfg_result = GUCR_NONE;
+                gpsData.cfg_result = -1;
 				gpsData.step += 50;
 				gpsData.state_ts = pif_cumulative_timer1ms;
 			}
@@ -352,7 +343,7 @@ static void gpsInitUblox(void)
 		}
 		else if (gpsData.step < 20 + kCfgMsgNavSize) {
 			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_MSG, sizeof(kCfgMsgNav[gpsData.step - 20]), (uint8_t*)kCfgMsgNav[gpsData.step - 20], FALSE)) {
-                gpsData.cfg_result = GUCR_NONE;
+                gpsData.cfg_result = -1;
 				gpsData.step += 50;
 				gpsData.state_ts = pif_cumulative_timer1ms;
 			}
@@ -363,7 +354,7 @@ static void gpsInitUblox(void)
 		}
 		else if (gpsData.step == 30) {
 			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_RATE, sizeof(kCfgRate), (uint8_t*)kCfgRate, FALSE)) {
-                gpsData.cfg_result = GUCR_NONE;
+                gpsData.cfg_result = -1;
 				gpsData.step += 50;
 				gpsData.state_ts = pif_cumulative_timer1ms;
 			}
@@ -374,7 +365,7 @@ static void gpsInitUblox(void)
 		}
 		else if (gpsData.step == 31) {
 			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_NAV5, sizeof(kCfgNav5), (uint8_t*)kCfgNav5, FALSE)) {
-                gpsData.cfg_result = GUCR_NONE;
+                gpsData.cfg_result = -1;
 				gpsData.step += 50;
 				gpsData.state_ts = pif_cumulative_timer1ms;
 			}
@@ -386,7 +377,7 @@ static void gpsInitUblox(void)
 		else if (gpsData.step == 32) {
 			i = mcfg.gps_ubx_sbas > SBAS_DISABLED ? mcfg.gps_ubx_sbas : SBAS_LAST;
 			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_SBAS, sizeof(kCfgSbas[i]), (uint8_t*)kCfgSbas[i], FALSE)) {
-                gpsData.cfg_result = GUCR_NONE;
+                gpsData.cfg_result = -1;
 				gpsData.step += 50;
 				gpsData.state_ts = pif_cumulative_timer1ms;
 			}

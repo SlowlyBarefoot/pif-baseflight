@@ -2459,44 +2459,45 @@ LOAD c:/st/stm32cubeide_1.6.1/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.exte
  .text._evtGpsNmeaReceive
                 0x0000000008005238       0xd0 ./Core/fc/source/gps.o
  .text._evtGpsUbxReceive
-                0x0000000008005308      0x10c ./Core/fc/source/gps.o
+                0x0000000008005308      0x104 ./Core/fc/source/gps.o
  .text._evtGpsTimeout
-                0x0000000008005414       0x2c ./Core/fc/source/gps.o
+                0x000000000800540c       0x2c ./Core/fc/source/gps.o
  .text.GPS_calc_longitude_scaling
-                0x0000000008005440       0x34 ./Core/fc/source/gps.o
+                0x0000000008005438       0x34 ./Core/fc/source/gps.o
  .text._EvtPrintFrame
-                0x0000000008005474       0x12 ./Core/fc/source/gps.o
- *fill*         0x0000000008005486        0x2 
+                0x000000000800546c       0x12 ./Core/fc/source/gps.o
+ *fill*         0x000000000800547e        0x2 
  .text.GPS_distance_cm_bearing.constprop.0.isra.0
-                0x0000000008005488       0x90 ./Core/fc/source/gps.o
+                0x0000000008005480       0x90 ./Core/fc/source/gps.o
  .text.gpsThread
-                0x0000000008005518      0x2b4 ./Core/fc/source/gps.o
-                0x0000000008005518                gpsThread
+                0x0000000008005510      0x2b8 ./Core/fc/source/gps.o
+                0x0000000008005510                gpsThread
  .text.gpsPollSvinfo
-                0x00000000080057cc       0x88 ./Core/fc/source/gps.o
-                0x00000000080057cc                gpsPollSvinfo
+                0x00000000080057c8       0x88 ./Core/fc/source/gps.o
+                0x00000000080057c8                gpsPollSvinfo
  .text.GPS_reset_home_position
-                0x0000000008005854       0x50 ./Core/fc/source/gps.o
-                0x0000000008005854                GPS_reset_home_position
+                0x0000000008005850       0x50 ./Core/fc/source/gps.o
+                0x0000000008005850                GPS_reset_home_position
  .text.GPS_reset_nav
-                0x00000000080058a4       0x5c ./Core/fc/source/gps.o
-                0x00000000080058a4                GPS_reset_nav
+                0x00000000080058a0       0x5c ./Core/fc/source/gps.o
+                0x00000000080058a0                GPS_reset_nav
  .text.gpsSetPIDs
-                0x0000000008005900      0x110 ./Core/fc/source/gps.o
-                0x0000000008005900                gpsSetPIDs
- .text.gpsInit  0x0000000008005a10       0x84 ./Core/fc/source/gps.o
-                0x0000000008005a10                gpsInit
+                0x00000000080058fc      0x110 ./Core/fc/source/gps.o
+                0x00000000080058fc                gpsSetPIDs
+ .text.gpsInit  0x0000000008005a0c       0x84 ./Core/fc/source/gps.o
+                0x0000000008005a0c                gpsInit
  .text.gpsSetPassthrough
-                0x0000000008005a94       0x50 ./Core/fc/source/gps.o
-                0x0000000008005a94                gpsSetPassthrough
+                0x0000000008005a90       0x50 ./Core/fc/source/gps.o
+                0x0000000008005a90                gpsSetPassthrough
  .text.GPS_set_next_wp
-                0x0000000008005ae4       0x98 ./Core/fc/source/gps.o
-                0x0000000008005ae4                GPS_set_next_wp
+                0x0000000008005ae0       0x98 ./Core/fc/source/gps.o
+                0x0000000008005ae0                GPS_set_next_wp
  .text.wrap_18000
-                0x0000000008005b7c       0x24 ./Core/fc/source/gps.o
-                0x0000000008005b7c                wrap_18000
+                0x0000000008005b78       0x24 ./Core/fc/source/gps.o
+                0x0000000008005b78                wrap_18000
  .text._evtGpsReceive
-                0x0000000008005ba0       0x88 ./Core/fc/source/gps.o
+                0x0000000008005b9c       0x88 ./Core/fc/source/gps.o
+ *fill*         0x0000000008005c24        0x4 
  .text.taskGpsNewData
                 0x0000000008005c28      0x7f4 ./Core/fc/source/gps.o
                 0x0000000008005c28                taskGpsNewData

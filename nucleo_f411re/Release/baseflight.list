@@ -3369,7 +3369,7 @@ Disassembly of section .text:
  800250e:	b120      	cbz	r0, 800251a <main+0x6da>
  8002510:	f894 11ac 	ldrb.w	r1, [r4, #428]	; 0x1ac
  8002514:	2003      	movs	r0, #3
- 8002516:	f003 fa7b 	bl	8005a10 <gpsInit>
+ 8002516:	f003 fa79 	bl	8005a0c <gpsInit>
  800251a:	f44f 6080 	mov.w	r0, #1024	; 0x400
  800251e:	f002 facf 	bl	8004ac0 <feature>
  8002522:	b118      	cbz	r0, 800252c <main+0x6ec>
@@ -5446,7 +5446,7 @@ Disassembly of section .text:
 
 080039f4 <cliGpsPassthrough>:
  80039f4:	b508      	push	{r3, lr}
- 80039f6:	f002 f84d 	bl	8005a94 <gpsSetPassthrough>
+ 80039f6:	f002 f84b 	bl	8005a90 <gpsSetPassthrough>
  80039fa:	b118      	cbz	r0, 8003a04 <cliGpsPassthrough+0x10>
  80039fc:	2801      	cmp	r0, #1
  80039fe:	d006      	beq.n	8003a0e <cliGpsPassthrough+0x1a>
@@ -6646,7 +6646,7 @@ Disassembly of section .text:
  80046a4:	f003 ff9e 	bl	80085e4 <setPIDController>
  80046a8:	b003      	add	sp, #12
  80046aa:	e8bd 4ff0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, lr}
- 80046ae:	f001 b927 	b.w	8005900 <gpsSetPIDs>
+ 80046ae:	f001 b925 	b.w	80058fc <gpsSetPIDs>
  80046b2:	4638      	mov	r0, r7
  80046b4:	e7d9      	b.n	800466a <activateConfig+0x7a>
  80046b6:	2001      	movs	r0, #1
@@ -7177,7 +7177,7 @@ Disassembly of section .text:
  8004c7a:	f8ca 2008 	strlt.w	r2, [sl, #8]
  8004c7e:	eb00 0080 	add.w	r0, r0, r0, lsl #2
  8004c82:	0040      	lsls	r0, r0, #1
- 8004c84:	f000 ff7a 	bl	8005b7c <wrap_18000>
+ 8004c84:	f000 ff78 	bl	8005b78 <wrap_18000>
  8004c88:	f04f 090a 	mov.w	r9, #10
  8004c8c:	fb90 f0f9 	sdiv	r0, r0, r9
  8004c90:	fa0f f880 	sxth.w	r8, r0
@@ -7315,7 +7315,7 @@ Disassembly of section .text:
  8004dfe:	d9bf      	bls.n	8004d80 <fw_nav+0x148>
  8004e00:	f04f 0a64 	mov.w	sl, #100	; 0x64
  8004e04:	fb00 f00a 	mul.w	r0, r0, sl
- 8004e08:	f000 feb8 	bl	8005b7c <wrap_18000>
+ 8004e08:	f000 feb6 	bl	8005b78 <wrap_18000>
  8004e0c:	fb90 f0fa 	sdiv	r0, r0, sl
  8004e10:	fa0f fa80 	sxth.w	sl, r0
  8004e14:	ea8a 73ea 	eor.w	r3, sl, sl, asr #31
@@ -7730,893 +7730,891 @@ Disassembly of section .text:
  800530a:	780b      	ldrb	r3, [r1, #0]
  800530c:	2b01      	cmp	r3, #1
  800530e:	4604      	mov	r4, r0
- 8005310:	d00d      	beq.n	800532e <_evtGpsUbxReceive+0x26>
+ 8005310:	d008      	beq.n	8005324 <_evtGpsUbxReceive+0x1c>
  8005312:	2b05      	cmp	r3, #5
- 8005314:	d112      	bne.n	800533c <_evtGpsUbxReceive+0x34>
- 8005316:	7848      	ldrb	r0, [r1, #1]
- 8005318:	b128      	cbz	r0, 8005326 <_evtGpsUbxReceive+0x1e>
- 800531a:	2801      	cmp	r0, #1
- 800531c:	d10e      	bne.n	800533c <_evtGpsUbxReceive+0x34>
- 800531e:	4b32      	ldr	r3, [pc, #200]	; (80053e8 <_evtGpsUbxReceive+0xe0>)
- 8005320:	61d8      	str	r0, [r3, #28]
- 8005322:	2000      	movs	r0, #0
- 8005324:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
- 8005326:	4b30      	ldr	r3, [pc, #192]	; (80053e8 <_evtGpsUbxReceive+0xe0>)
- 8005328:	2202      	movs	r2, #2
- 800532a:	61da      	str	r2, [r3, #28]
- 800532c:	e7fa      	b.n	8005324 <_evtGpsUbxReceive+0x1c>
- 800532e:	784b      	ldrb	r3, [r1, #1]
- 8005330:	4e2e      	ldr	r6, [pc, #184]	; (80053ec <_evtGpsUbxReceive+0xe4>)
- 8005332:	2b02      	cmp	r3, #2
- 8005334:	7835      	ldrb	r5, [r6, #0]
- 8005336:	d009      	beq.n	800534c <_evtGpsUbxReceive+0x44>
- 8005338:	2b12      	cmp	r3, #18
- 800533a:	d038      	beq.n	80053ae <_evtGpsUbxReceive+0xa6>
- 800533c:	4b2b      	ldr	r3, [pc, #172]	; (80053ec <_evtGpsUbxReceive+0xe4>)
- 800533e:	781a      	ldrb	r2, [r3, #0]
- 8005340:	2000      	movs	r0, #0
- 8005342:	2a03      	cmp	r2, #3
- 8005344:	bf04      	itt	eq
- 8005346:	7018      	strbeq	r0, [r3, #0]
- 8005348:	2001      	moveq	r0, #1
- 800534a:	e7eb      	b.n	8005324 <_evtGpsUbxReceive+0x1c>
- 800534c:	f890 3059 	ldrb.w	r3, [r0, #89]	; 0x59
- 8005350:	4a27      	ldr	r2, [pc, #156]	; (80053f0 <_evtGpsUbxReceive+0xe8>)
- 8005352:	f3c3 0100 	ubfx	r1, r3, #0, #1
- 8005356:	07db      	lsls	r3, r3, #31
- 8005358:	72d1      	strb	r1, [r2, #11]
- 800535a:	d51e      	bpl.n	800539a <_evtGpsUbxReceive+0x92>
- 800535c:	a320      	add	r3, pc, #128	; (adr r3, 80053e0 <_evtGpsUbxReceive+0xd8>)
- 800535e:	e9d3 2300 	ldrd	r2, r3, [r3]
- 8005362:	e9d0 0108 	ldrd	r0, r1, [r0, #32]
- 8005366:	f7fb f8fb 	bl	8000560 <__aeabi_dmul>
- 800536a:	f7fb fb93 	bl	8000a94 <__aeabi_d2iz>
- 800536e:	4f21      	ldr	r7, [pc, #132]	; (80053f4 <_evtGpsUbxReceive+0xec>)
- 8005370:	a31b      	add	r3, pc, #108	; (adr r3, 80053e0 <_evtGpsUbxReceive+0xd8>)
- 8005372:	e9d3 2300 	ldrd	r2, r3, [r3]
- 8005376:	6038      	str	r0, [r7, #0]
- 8005378:	e9d4 010a 	ldrd	r0, r1, [r4, #40]	; 0x28
- 800537c:	f7fb f8f0 	bl	8000560 <__aeabi_dmul>
- 8005380:	f7fb fb88 	bl	8000a94 <__aeabi_d2iz>
- 8005384:	4b1c      	ldr	r3, [pc, #112]	; (80053f8 <_evtGpsUbxReceive+0xf0>)
- 8005386:	f894 2058 	ldrb.w	r2, [r4, #88]	; 0x58
- 800538a:	6078      	str	r0, [r7, #4]
- 800538c:	701a      	strb	r2, [r3, #0]
- 800538e:	e9d4 010c 	ldrd	r0, r1, [r4, #48]	; 0x30
- 8005392:	f7fb fba7 	bl	8000ae4 <__aeabi_d2uiz>
+ 8005314:	d10d      	bne.n	8005332 <_evtGpsUbxReceive+0x2a>
+ 8005316:	784b      	ldrb	r3, [r1, #1]
+ 8005318:	2b01      	cmp	r3, #1
+ 800531a:	d80a      	bhi.n	8005332 <_evtGpsUbxReceive+0x2a>
+ 800531c:	4a30      	ldr	r2, [pc, #192]	; (80053e0 <_evtGpsUbxReceive+0xd8>)
+ 800531e:	2000      	movs	r0, #0
+ 8005320:	61d3      	str	r3, [r2, #28]
+ 8005322:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
+ 8005324:	784b      	ldrb	r3, [r1, #1]
+ 8005326:	4e2f      	ldr	r6, [pc, #188]	; (80053e4 <_evtGpsUbxReceive+0xdc>)
+ 8005328:	2b02      	cmp	r3, #2
+ 800532a:	7835      	ldrb	r5, [r6, #0]
+ 800532c:	d009      	beq.n	8005342 <_evtGpsUbxReceive+0x3a>
+ 800532e:	2b12      	cmp	r3, #18
+ 8005330:	d038      	beq.n	80053a4 <_evtGpsUbxReceive+0x9c>
+ 8005332:	4b2c      	ldr	r3, [pc, #176]	; (80053e4 <_evtGpsUbxReceive+0xdc>)
+ 8005334:	781a      	ldrb	r2, [r3, #0]
+ 8005336:	2000      	movs	r0, #0
+ 8005338:	2a03      	cmp	r2, #3
+ 800533a:	bf04      	itt	eq
+ 800533c:	7018      	strbeq	r0, [r3, #0]
+ 800533e:	2001      	moveq	r0, #1
+ 8005340:	e7ef      	b.n	8005322 <_evtGpsUbxReceive+0x1a>
+ 8005342:	f890 3059 	ldrb.w	r3, [r0, #89]	; 0x59
+ 8005346:	4a28      	ldr	r2, [pc, #160]	; (80053e8 <_evtGpsUbxReceive+0xe0>)
+ 8005348:	f3c3 0100 	ubfx	r1, r3, #0, #1
+ 800534c:	07db      	lsls	r3, r3, #31
+ 800534e:	72d1      	strb	r1, [r2, #11]
+ 8005350:	d51e      	bpl.n	8005390 <_evtGpsUbxReceive+0x88>
+ 8005352:	a321      	add	r3, pc, #132	; (adr r3, 80053d8 <_evtGpsUbxReceive+0xd0>)
+ 8005354:	e9d3 2300 	ldrd	r2, r3, [r3]
+ 8005358:	e9d0 0108 	ldrd	r0, r1, [r0, #32]
+ 800535c:	f7fb f900 	bl	8000560 <__aeabi_dmul>
+ 8005360:	f7fb fb98 	bl	8000a94 <__aeabi_d2iz>
+ 8005364:	4f21      	ldr	r7, [pc, #132]	; (80053ec <_evtGpsUbxReceive+0xe4>)
+ 8005366:	a31c      	add	r3, pc, #112	; (adr r3, 80053d8 <_evtGpsUbxReceive+0xd0>)
+ 8005368:	e9d3 2300 	ldrd	r2, r3, [r3]
+ 800536c:	6038      	str	r0, [r7, #0]
+ 800536e:	e9d4 010a 	ldrd	r0, r1, [r4, #40]	; 0x28
+ 8005372:	f7fb f8f5 	bl	8000560 <__aeabi_dmul>
+ 8005376:	f7fb fb8d 	bl	8000a94 <__aeabi_d2iz>
+ 800537a:	4b1d      	ldr	r3, [pc, #116]	; (80053f0 <_evtGpsUbxReceive+0xe8>)
+ 800537c:	f894 2058 	ldrb.w	r2, [r4, #88]	; 0x58
+ 8005380:	6078      	str	r0, [r7, #4]
+ 8005382:	701a      	strb	r2, [r3, #0]
+ 8005384:	e9d4 010c 	ldrd	r0, r1, [r4, #48]	; 0x30
+ 8005388:	f7fb fbac 	bl	8000ae4 <__aeabi_d2uiz>
+ 800538c:	4b19      	ldr	r3, [pc, #100]	; (80053f4 <_evtGpsUbxReceive+0xec>)
+ 800538e:	8018      	strh	r0, [r3, #0]
+ 8005390:	4b19      	ldr	r3, [pc, #100]	; (80053f8 <_evtGpsUbxReceive+0xf0>)
+ 8005392:	6ca2      	ldr	r2, [r4, #72]	; 0x48
+ 8005394:	601a      	str	r2, [r3, #0]
  8005396:	4b19      	ldr	r3, [pc, #100]	; (80053fc <_evtGpsUbxReceive+0xf4>)
- 8005398:	8018      	strh	r0, [r3, #0]
- 800539a:	4b19      	ldr	r3, [pc, #100]	; (8005400 <_evtGpsUbxReceive+0xf8>)
- 800539c:	6ca2      	ldr	r2, [r4, #72]	; 0x48
- 800539e:	601a      	str	r2, [r3, #0]
- 80053a0:	4b18      	ldr	r3, [pc, #96]	; (8005404 <_evtGpsUbxReceive+0xfc>)
- 80053a2:	6ce2      	ldr	r2, [r4, #76]	; 0x4c
- 80053a4:	601a      	str	r2, [r3, #0]
- 80053a6:	f045 0501 	orr.w	r5, r5, #1
- 80053aa:	7035      	strb	r5, [r6, #0]
- 80053ac:	e7c6      	b.n	800533c <_evtGpsUbxReceive+0x34>
- 80053ae:	4b16      	ldr	r3, [pc, #88]	; (8005408 <_evtGpsUbxReceive+0x100>)
- 80053b0:	2200      	movs	r2, #0
- 80053b2:	e9d0 010e 	ldrd	r0, r1, [r0, #56]	; 0x38
- 80053b6:	f7fb f9fd 	bl	80007b4 <__aeabi_ddiv>
- 80053ba:	f7fb fb93 	bl	8000ae4 <__aeabi_d2uiz>
- 80053be:	4b13      	ldr	r3, [pc, #76]	; (800540c <_evtGpsUbxReceive+0x104>)
- 80053c0:	2200      	movs	r2, #0
- 80053c2:	8018      	strh	r0, [r3, #0]
- 80053c4:	4b10      	ldr	r3, [pc, #64]	; (8005408 <_evtGpsUbxReceive+0x100>)
- 80053c6:	e9d4 0110 	ldrd	r0, r1, [r4, #64]	; 0x40
- 80053ca:	f7fb f8c9 	bl	8000560 <__aeabi_dmul>
- 80053ce:	f7fb fb89 	bl	8000ae4 <__aeabi_d2uiz>
- 80053d2:	4b0f      	ldr	r3, [pc, #60]	; (8005410 <_evtGpsUbxReceive+0x108>)
- 80053d4:	f045 0502 	orr.w	r5, r5, #2
- 80053d8:	8018      	strh	r0, [r3, #0]
- 80053da:	e7e6      	b.n	80053aa <_evtGpsUbxReceive+0xa2>
- 80053dc:	f3af 8000 	nop.w
- 80053e0:	00000000 	.word	0x00000000
- 80053e4:	416312d0 	.word	0x416312d0
- 80053e8:	20000f10 	.word	0x20000f10
- 80053ec:	20000f30 	.word	0x20000f30
- 80053f0:	20001764 	.word	0x20001764
- 80053f4:	20001630 	.word	0x20001630
- 80053f8:	20001659 	.word	0x20001659
- 80053fc:	20001628 	.word	0x20001628
- 8005400:	20001620 	.word	0x20001620
- 8005404:	20001624 	.word	0x20001624
- 8005408:	40240000 	.word	0x40240000
- 800540c:	2000165a 	.word	0x2000165a
- 8005410:	2000163c 	.word	0x2000163c
+ 8005398:	6ce2      	ldr	r2, [r4, #76]	; 0x4c
+ 800539a:	601a      	str	r2, [r3, #0]
+ 800539c:	f045 0501 	orr.w	r5, r5, #1
+ 80053a0:	7035      	strb	r5, [r6, #0]
+ 80053a2:	e7c6      	b.n	8005332 <_evtGpsUbxReceive+0x2a>
+ 80053a4:	4b16      	ldr	r3, [pc, #88]	; (8005400 <_evtGpsUbxReceive+0xf8>)
+ 80053a6:	2200      	movs	r2, #0
+ 80053a8:	e9d0 010e 	ldrd	r0, r1, [r0, #56]	; 0x38
+ 80053ac:	f7fb fa02 	bl	80007b4 <__aeabi_ddiv>
+ 80053b0:	f7fb fb98 	bl	8000ae4 <__aeabi_d2uiz>
+ 80053b4:	4b13      	ldr	r3, [pc, #76]	; (8005404 <_evtGpsUbxReceive+0xfc>)
+ 80053b6:	2200      	movs	r2, #0
+ 80053b8:	8018      	strh	r0, [r3, #0]
+ 80053ba:	4b11      	ldr	r3, [pc, #68]	; (8005400 <_evtGpsUbxReceive+0xf8>)
+ 80053bc:	e9d4 0110 	ldrd	r0, r1, [r4, #64]	; 0x40
+ 80053c0:	f7fb f8ce 	bl	8000560 <__aeabi_dmul>
+ 80053c4:	f7fb fb8e 	bl	8000ae4 <__aeabi_d2uiz>
+ 80053c8:	4b0f      	ldr	r3, [pc, #60]	; (8005408 <_evtGpsUbxReceive+0x100>)
+ 80053ca:	f045 0502 	orr.w	r5, r5, #2
+ 80053ce:	8018      	strh	r0, [r3, #0]
+ 80053d0:	e7e6      	b.n	80053a0 <_evtGpsUbxReceive+0x98>
+ 80053d2:	bf00      	nop
+ 80053d4:	f3af 8000 	nop.w
+ 80053d8:	00000000 	.word	0x00000000
+ 80053dc:	416312d0 	.word	0x416312d0
+ 80053e0:	20000f10 	.word	0x20000f10
+ 80053e4:	20000f30 	.word	0x20000f30
+ 80053e8:	20001764 	.word	0x20001764
+ 80053ec:	20001630 	.word	0x20001630
+ 80053f0:	20001659 	.word	0x20001659
+ 80053f4:	20001628 	.word	0x20001628
+ 80053f8:	20001620 	.word	0x20001620
+ 80053fc:	20001624 	.word	0x20001624
+ 8005400:	40240000 	.word	0x40240000
+ 8005404:	2000165a 	.word	0x2000165a
+ 8005408:	2000163c 	.word	0x2000163c
 
-08005414 <_evtGpsTimeout>:
- 8005414:	b508      	push	{r3, lr}
- 8005416:	4b08      	ldr	r3, [pc, #32]	; (8005438 <_evtGpsTimeout+0x24>)
- 8005418:	6898      	ldr	r0, [r3, #8]
- 800541a:	3004      	adds	r0, #4
- 800541c:	f7fc fcaa 	bl	8001d74 <serialStopReceiveFunc>
- 8005420:	4b06      	ldr	r3, [pc, #24]	; (800543c <_evtGpsTimeout+0x28>)
- 8005422:	2200      	movs	r2, #0
- 8005424:	2020      	movs	r0, #32
- 8005426:	609a      	str	r2, [r3, #8]
- 8005428:	601a      	str	r2, [r3, #0]
- 800542a:	f7ff fb3b 	bl	8004aa4 <sensorsClear>
- 800542e:	e8bd 4008 	ldmia.w	sp!, {r3, lr}
- 8005432:	2006      	movs	r0, #6
- 8005434:	f7ff bef0 	b.w	8005218 <gpsSetState>
- 8005438:	20000440 	.word	0x20000440
- 800543c:	20000f38 	.word	0x20000f38
+0800540c <_evtGpsTimeout>:
+ 800540c:	b508      	push	{r3, lr}
+ 800540e:	4b08      	ldr	r3, [pc, #32]	; (8005430 <_evtGpsTimeout+0x24>)
+ 8005410:	6898      	ldr	r0, [r3, #8]
+ 8005412:	3004      	adds	r0, #4
+ 8005414:	f7fc fcae 	bl	8001d74 <serialStopReceiveFunc>
+ 8005418:	4b06      	ldr	r3, [pc, #24]	; (8005434 <_evtGpsTimeout+0x28>)
+ 800541a:	2200      	movs	r2, #0
+ 800541c:	2020      	movs	r0, #32
+ 800541e:	609a      	str	r2, [r3, #8]
+ 8005420:	601a      	str	r2, [r3, #0]
+ 8005422:	f7ff fb3f 	bl	8004aa4 <sensorsClear>
+ 8005426:	e8bd 4008 	ldmia.w	sp!, {r3, lr}
+ 800542a:	2006      	movs	r0, #6
+ 800542c:	f7ff bef4 	b.w	8005218 <gpsSetState>
+ 8005430:	20000440 	.word	0x20000440
+ 8005434:	20000f38 	.word	0x20000f38
 
-08005440 <GPS_calc_longitude_scaling>:
- 8005440:	ee07 0a90 	vmov	s15, r0
- 8005444:	ed9f 7a08 	vldr	s14, [pc, #32]	; 8005468 <GPS_calc_longitude_scaling+0x28>
- 8005448:	eef8 7ae7 	vcvt.f32.s32	s15, s15
- 800544c:	b508      	push	{r3, lr}
- 800544e:	ee87 0a87 	vdiv.f32	s0, s15, s14
- 8005452:	eddf 7a06 	vldr	s15, [pc, #24]	; 800546c <GPS_calc_longitude_scaling+0x2c>
- 8005456:	ee20 0a27 	vmul.f32	s0, s0, s15
- 800545a:	f00f f9a9 	bl	80147b0 <cosf>
- 800545e:	4b04      	ldr	r3, [pc, #16]	; (8005470 <GPS_calc_longitude_scaling+0x30>)
- 8005460:	ed83 0a00 	vstr	s0, [r3]
- 8005464:	bd08      	pop	{r3, pc}
- 8005466:	bf00      	nop
- 8005468:	4b189680 	.word	0x4b189680
- 800546c:	3c8efa35 	.word	0x3c8efa35
- 8005470:	2000001c 	.word	0x2000001c
+08005438 <GPS_calc_longitude_scaling>:
+ 8005438:	ee07 0a90 	vmov	s15, r0
+ 800543c:	ed9f 7a08 	vldr	s14, [pc, #32]	; 8005460 <GPS_calc_longitude_scaling+0x28>
+ 8005440:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 8005444:	b508      	push	{r3, lr}
+ 8005446:	ee87 0a87 	vdiv.f32	s0, s15, s14
+ 800544a:	eddf 7a06 	vldr	s15, [pc, #24]	; 8005464 <GPS_calc_longitude_scaling+0x2c>
+ 800544e:	ee20 0a27 	vmul.f32	s0, s0, s15
+ 8005452:	f00f f9ad 	bl	80147b0 <cosf>
+ 8005456:	4b04      	ldr	r3, [pc, #16]	; (8005468 <GPS_calc_longitude_scaling+0x30>)
+ 8005458:	ed83 0a00 	vstr	s0, [r3]
+ 800545c:	bd08      	pop	{r3, pc}
+ 800545e:	bf00      	nop
+ 8005460:	4b189680 	.word	0x4b189680
+ 8005464:	3c8efa35 	.word	0x3c8efa35
+ 8005468:	2000001c 	.word	0x2000001c
 
-08005474 <_EvtPrintFrame>:
- 8005474:	b508      	push	{r3, lr}
- 8005476:	2001      	movs	r0, #1
- 8005478:	f7fc fa90 	bl	800199c <actLed0State>
- 800547c:	e8bd 4008 	ldmia.w	sp!, {r3, lr}
- 8005480:	2000      	movs	r0, #0
- 8005482:	f7fc ba8b 	b.w	800199c <actLed0State>
+0800546c <_EvtPrintFrame>:
+ 800546c:	b508      	push	{r3, lr}
+ 800546e:	2001      	movs	r0, #1
+ 8005470:	f7fc fa94 	bl	800199c <actLed0State>
+ 8005474:	e8bd 4008 	ldmia.w	sp!, {r3, lr}
+ 8005478:	2000      	movs	r0, #0
+ 800547a:	f7fc ba8f 	b.w	800199c <actLed0State>
 	...
 
-08005488 <GPS_distance_cm_bearing.constprop.0.isra.0>:
- 8005488:	b538      	push	{r3, r4, r5, lr}
- 800548a:	461c      	mov	r4, r3
- 800548c:	4b1d      	ldr	r3, [pc, #116]	; (8005504 <GPS_distance_cm_bearing.constprop.0.isra.0+0x7c>)
- 800548e:	4615      	mov	r5, r2
- 8005490:	681a      	ldr	r2, [r3, #0]
- 8005492:	685b      	ldr	r3, [r3, #4]
- 8005494:	1acb      	subs	r3, r1, r3
- 8005496:	ed2d 8b02 	vpush	{d8}
- 800549a:	ee08 3a10 	vmov	s16, r3
- 800549e:	4b1a      	ldr	r3, [pc, #104]	; (8005508 <GPS_distance_cm_bearing.constprop.0.isra.0+0x80>)
- 80054a0:	eeb8 8ac8 	vcvt.f32.s32	s16, s16
- 80054a4:	edd3 0a00 	vldr	s1, [r3]
- 80054a8:	1a82      	subs	r2, r0, r2
- 80054aa:	ee08 2a90 	vmov	s17, r2
- 80054ae:	ee28 8a20 	vmul.f32	s16, s16, s1
- 80054b2:	eef8 8ae8 	vcvt.f32.s32	s17, s17
- 80054b6:	ee28 0a08 	vmul.f32	s0, s16, s16
- 80054ba:	eea8 0aa8 	vfma.f32	s0, s17, s17
- 80054be:	f00f fac7 	bl	8014a50 <sqrtf>
- 80054c2:	eddf 7a12 	vldr	s15, [pc, #72]	; 800550c <GPS_distance_cm_bearing.constprop.0.isra.0+0x84>
- 80054c6:	ee20 0a27 	vmul.f32	s0, s0, s15
- 80054ca:	eef0 0a48 	vmov.f32	s1, s16
- 80054ce:	eebd 0ac0 	vcvt.s32.f32	s0, s0
- 80054d2:	ed85 0a00 	vstr	s0, [r5]
- 80054d6:	eeb1 0a68 	vneg.f32	s0, s17
- 80054da:	f00f fa5f 	bl	801499c <atan2f>
- 80054de:	ed9f 7a0c 	vldr	s14, [pc, #48]	; 8005510 <GPS_distance_cm_bearing.constprop.0.isra.0+0x88>
- 80054e2:	eddf 7a0c 	vldr	s15, [pc, #48]	; 8005514 <GPS_distance_cm_bearing.constprop.0.isra.0+0x8c>
- 80054e6:	eee0 7a07 	vfma.f32	s15, s0, s14
- 80054ea:	ecbd 8b02 	vpop	{d8}
- 80054ee:	eefd 7ae7 	vcvt.s32.f32	s15, s15
- 80054f2:	ee17 2a90 	vmov	r2, s15
- 80054f6:	2a00      	cmp	r2, #0
- 80054f8:	bfbc      	itt	lt
- 80054fa:	f502 420c 	addlt.w	r2, r2, #35840	; 0x8c00
- 80054fe:	32a0      	addlt	r2, #160	; 0xa0
- 8005500:	6022      	str	r2, [r4, #0]
- 8005502:	bd38      	pop	{r3, r4, r5, pc}
- 8005504:	20001630 	.word	0x20001630
- 8005508:	2000001c 	.word	0x2000001c
- 800550c:	3f8e7d2c 	.word	0x3f8e7d2c
- 8005510:	45b30ca0 	.word	0x45b30ca0
- 8005514:	460ca000 	.word	0x460ca000
+08005480 <GPS_distance_cm_bearing.constprop.0.isra.0>:
+ 8005480:	b538      	push	{r3, r4, r5, lr}
+ 8005482:	461c      	mov	r4, r3
+ 8005484:	4b1d      	ldr	r3, [pc, #116]	; (80054fc <GPS_distance_cm_bearing.constprop.0.isra.0+0x7c>)
+ 8005486:	4615      	mov	r5, r2
+ 8005488:	681a      	ldr	r2, [r3, #0]
+ 800548a:	685b      	ldr	r3, [r3, #4]
+ 800548c:	1acb      	subs	r3, r1, r3
+ 800548e:	ed2d 8b02 	vpush	{d8}
+ 8005492:	ee08 3a10 	vmov	s16, r3
+ 8005496:	4b1a      	ldr	r3, [pc, #104]	; (8005500 <GPS_distance_cm_bearing.constprop.0.isra.0+0x80>)
+ 8005498:	eeb8 8ac8 	vcvt.f32.s32	s16, s16
+ 800549c:	edd3 0a00 	vldr	s1, [r3]
+ 80054a0:	1a82      	subs	r2, r0, r2
+ 80054a2:	ee08 2a90 	vmov	s17, r2
+ 80054a6:	ee28 8a20 	vmul.f32	s16, s16, s1
+ 80054aa:	eef8 8ae8 	vcvt.f32.s32	s17, s17
+ 80054ae:	ee28 0a08 	vmul.f32	s0, s16, s16
+ 80054b2:	eea8 0aa8 	vfma.f32	s0, s17, s17
+ 80054b6:	f00f facb 	bl	8014a50 <sqrtf>
+ 80054ba:	eddf 7a12 	vldr	s15, [pc, #72]	; 8005504 <GPS_distance_cm_bearing.constprop.0.isra.0+0x84>
+ 80054be:	ee20 0a27 	vmul.f32	s0, s0, s15
+ 80054c2:	eef0 0a48 	vmov.f32	s1, s16
+ 80054c6:	eebd 0ac0 	vcvt.s32.f32	s0, s0
+ 80054ca:	ed85 0a00 	vstr	s0, [r5]
+ 80054ce:	eeb1 0a68 	vneg.f32	s0, s17
+ 80054d2:	f00f fa63 	bl	801499c <atan2f>
+ 80054d6:	ed9f 7a0c 	vldr	s14, [pc, #48]	; 8005508 <GPS_distance_cm_bearing.constprop.0.isra.0+0x88>
+ 80054da:	eddf 7a0c 	vldr	s15, [pc, #48]	; 800550c <GPS_distance_cm_bearing.constprop.0.isra.0+0x8c>
+ 80054de:	eee0 7a07 	vfma.f32	s15, s0, s14
+ 80054e2:	ecbd 8b02 	vpop	{d8}
+ 80054e6:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+ 80054ea:	ee17 2a90 	vmov	r2, s15
+ 80054ee:	2a00      	cmp	r2, #0
+ 80054f0:	bfbc      	itt	lt
+ 80054f2:	f502 420c 	addlt.w	r2, r2, #35840	; 0x8c00
+ 80054f6:	32a0      	addlt	r2, #160	; 0xa0
+ 80054f8:	6022      	str	r2, [r4, #0]
+ 80054fa:	bd38      	pop	{r3, r4, r5, pc}
+ 80054fc:	20001630 	.word	0x20001630
+ 8005500:	2000001c 	.word	0x2000001c
+ 8005504:	3f8e7d2c 	.word	0x3f8e7d2c
+ 8005508:	45b30ca0 	.word	0x45b30ca0
+ 800550c:	460ca000 	.word	0x460ca000
 
-08005518 <gpsThread>:
- 8005518:	b537      	push	{r0, r1, r2, r4, r5, lr}
- 800551a:	4c99      	ldr	r4, [pc, #612]	; (8005780 <gpsThread+0x268>)
- 800551c:	7823      	ldrb	r3, [r4, #0]
- 800551e:	3b01      	subs	r3, #1
- 8005520:	2b05      	cmp	r3, #5
- 8005522:	d81f      	bhi.n	8005564 <gpsThread+0x4c>
- 8005524:	e8df f013 	tbh	[pc, r3, lsl #1]
- 8005528:	00260006 	.word	0x00260006
- 800552c:	00580042 	.word	0x00580042
- 8005530:	0105001e 	.word	0x0105001e
- 8005534:	4b93      	ldr	r3, [pc, #588]	; (8005784 <gpsThread+0x26c>)
- 8005536:	6922      	ldr	r2, [r4, #16]
- 8005538:	681d      	ldr	r5, [r3, #0]
- 800553a:	6963      	ldr	r3, [r4, #20]
- 800553c:	1aeb      	subs	r3, r5, r3
- 800553e:	2a00      	cmp	r2, #0
- 8005540:	f000 8118 	beq.w	8005774 <gpsThread+0x25c>
- 8005544:	f5b3 7ffa 	cmp.w	r3, #500	; 0x1f4
- 8005548:	d30c      	bcc.n	8005564 <gpsThread+0x4c>
- 800554a:	2a04      	cmp	r2, #4
- 800554c:	dc0c      	bgt.n	8005568 <gpsThread+0x50>
- 800554e:	4b8e      	ldr	r3, [pc, #568]	; (8005788 <gpsThread+0x270>)
- 8005550:	eb03 02c2 	add.w	r2, r3, r2, lsl #3
- 8005554:	4b8d      	ldr	r3, [pc, #564]	; (800578c <gpsThread+0x274>)
- 8005556:	6851      	ldr	r1, [r2, #4]
- 8005558:	6898      	ldr	r0, [r3, #8]
- 800555a:	f7fc fb7b 	bl	8001c54 <serialSetBaudRate>
- 800555e:	2302      	movs	r3, #2
- 8005560:	7023      	strb	r3, [r4, #0]
- 8005562:	6165      	str	r5, [r4, #20]
- 8005564:	b003      	add	sp, #12
- 8005566:	bd30      	pop	{r4, r5, pc}
- 8005568:	2003      	movs	r0, #3
- 800556a:	b003      	add	sp, #12
- 800556c:	e8bd 4030 	ldmia.w	sp!, {r4, r5, lr}
- 8005570:	f7ff be52 	b.w	8005218 <gpsSetState>
- 8005574:	4b83      	ldr	r3, [pc, #524]	; (8005784 <gpsThread+0x26c>)
- 8005576:	681d      	ldr	r5, [r3, #0]
- 8005578:	6963      	ldr	r3, [r4, #20]
- 800557a:	1aeb      	subs	r3, r5, r3
- 800557c:	2bc7      	cmp	r3, #199	; 0xc7
- 800557e:	d9f1      	bls.n	8005564 <gpsThread+0x4c>
- 8005580:	2300      	movs	r3, #0
- 8005582:	9301      	str	r3, [sp, #4]
- 8005584:	7862      	ldrb	r2, [r4, #1]
- 8005586:	4b80      	ldr	r3, [pc, #512]	; (8005788 <gpsThread+0x270>)
- 8005588:	4881      	ldr	r0, [pc, #516]	; (8005790 <gpsThread+0x278>)
- 800558a:	eb03 03c2 	add.w	r3, r3, r2, lsl #3
- 800558e:	2101      	movs	r1, #1
- 8005590:	685b      	ldr	r3, [r3, #4]
- 8005592:	9300      	str	r3, [sp, #0]
- 8005594:	2207      	movs	r2, #7
- 8005596:	2303      	movs	r3, #3
- 8005598:	f008 fdb8 	bl	800e10c <pifGpsUblox_SetPubxConfig>
- 800559c:	2800      	cmp	r0, #0
- 800559e:	f000 80e7 	beq.w	8005770 <gpsThread+0x258>
- 80055a2:	6923      	ldr	r3, [r4, #16]
- 80055a4:	3301      	adds	r3, #1
- 80055a6:	6123      	str	r3, [r4, #16]
- 80055a8:	2301      	movs	r3, #1
- 80055aa:	e7d9      	b.n	8005560 <gpsThread+0x48>
- 80055ac:	4b75      	ldr	r3, [pc, #468]	; (8005784 <gpsThread+0x26c>)
- 80055ae:	6962      	ldr	r2, [r4, #20]
- 80055b0:	681b      	ldr	r3, [r3, #0]
- 80055b2:	1a9b      	subs	r3, r3, r2
- 80055b4:	f5b3 7ffa 	cmp.w	r3, #500	; 0x1f4
- 80055b8:	d3d4      	bcc.n	8005564 <gpsThread+0x4c>
- 80055ba:	7862      	ldrb	r2, [r4, #1]
- 80055bc:	4b72      	ldr	r3, [pc, #456]	; (8005788 <gpsThread+0x270>)
- 80055be:	4c73      	ldr	r4, [pc, #460]	; (800578c <gpsThread+0x274>)
- 80055c0:	eb03 03c2 	add.w	r3, r3, r2, lsl #3
+08005510 <gpsThread>:
+ 8005510:	b537      	push	{r0, r1, r2, r4, r5, lr}
+ 8005512:	4c9a      	ldr	r4, [pc, #616]	; (800577c <gpsThread+0x26c>)
+ 8005514:	7823      	ldrb	r3, [r4, #0]
+ 8005516:	3b01      	subs	r3, #1
+ 8005518:	2b05      	cmp	r3, #5
+ 800551a:	d81f      	bhi.n	800555c <gpsThread+0x4c>
+ 800551c:	e8df f013 	tbh	[pc, r3, lsl #1]
+ 8005520:	00260006 	.word	0x00260006
+ 8005524:	00580042 	.word	0x00580042
+ 8005528:	0106001e 	.word	0x0106001e
+ 800552c:	4b94      	ldr	r3, [pc, #592]	; (8005780 <gpsThread+0x270>)
+ 800552e:	6922      	ldr	r2, [r4, #16]
+ 8005530:	681d      	ldr	r5, [r3, #0]
+ 8005532:	6963      	ldr	r3, [r4, #20]
+ 8005534:	1aeb      	subs	r3, r5, r3
+ 8005536:	2a00      	cmp	r2, #0
+ 8005538:	f000 8119 	beq.w	800576e <gpsThread+0x25e>
+ 800553c:	f5b3 7ffa 	cmp.w	r3, #500	; 0x1f4
+ 8005540:	d30c      	bcc.n	800555c <gpsThread+0x4c>
+ 8005542:	2a04      	cmp	r2, #4
+ 8005544:	dc0c      	bgt.n	8005560 <gpsThread+0x50>
+ 8005546:	4b8f      	ldr	r3, [pc, #572]	; (8005784 <gpsThread+0x274>)
+ 8005548:	eb03 02c2 	add.w	r2, r3, r2, lsl #3
+ 800554c:	4b8e      	ldr	r3, [pc, #568]	; (8005788 <gpsThread+0x278>)
+ 800554e:	6851      	ldr	r1, [r2, #4]
+ 8005550:	6898      	ldr	r0, [r3, #8]
+ 8005552:	f7fc fb7f 	bl	8001c54 <serialSetBaudRate>
+ 8005556:	2302      	movs	r3, #2
+ 8005558:	7023      	strb	r3, [r4, #0]
+ 800555a:	6165      	str	r5, [r4, #20]
+ 800555c:	b003      	add	sp, #12
+ 800555e:	bd30      	pop	{r4, r5, pc}
+ 8005560:	2003      	movs	r0, #3
+ 8005562:	b003      	add	sp, #12
+ 8005564:	e8bd 4030 	ldmia.w	sp!, {r4, r5, lr}
+ 8005568:	f7ff be56 	b.w	8005218 <gpsSetState>
+ 800556c:	4b84      	ldr	r3, [pc, #528]	; (8005780 <gpsThread+0x270>)
+ 800556e:	681d      	ldr	r5, [r3, #0]
+ 8005570:	6963      	ldr	r3, [r4, #20]
+ 8005572:	1aeb      	subs	r3, r5, r3
+ 8005574:	2bc7      	cmp	r3, #199	; 0xc7
+ 8005576:	d9f1      	bls.n	800555c <gpsThread+0x4c>
+ 8005578:	2300      	movs	r3, #0
+ 800557a:	9301      	str	r3, [sp, #4]
+ 800557c:	7862      	ldrb	r2, [r4, #1]
+ 800557e:	4b81      	ldr	r3, [pc, #516]	; (8005784 <gpsThread+0x274>)
+ 8005580:	4882      	ldr	r0, [pc, #520]	; (800578c <gpsThread+0x27c>)
+ 8005582:	eb03 03c2 	add.w	r3, r3, r2, lsl #3
+ 8005586:	2101      	movs	r1, #1
+ 8005588:	685b      	ldr	r3, [r3, #4]
+ 800558a:	9300      	str	r3, [sp, #0]
+ 800558c:	2207      	movs	r2, #7
+ 800558e:	2303      	movs	r3, #3
+ 8005590:	f008 fdbc 	bl	800e10c <pifGpsUblox_SetPubxConfig>
+ 8005594:	2800      	cmp	r0, #0
+ 8005596:	f000 80e8 	beq.w	800576a <gpsThread+0x25a>
+ 800559a:	6923      	ldr	r3, [r4, #16]
+ 800559c:	3301      	adds	r3, #1
+ 800559e:	6123      	str	r3, [r4, #16]
+ 80055a0:	2301      	movs	r3, #1
+ 80055a2:	e7d9      	b.n	8005558 <gpsThread+0x48>
+ 80055a4:	4b76      	ldr	r3, [pc, #472]	; (8005780 <gpsThread+0x270>)
+ 80055a6:	6962      	ldr	r2, [r4, #20]
+ 80055a8:	681b      	ldr	r3, [r3, #0]
+ 80055aa:	1a9b      	subs	r3, r3, r2
+ 80055ac:	f5b3 7ffa 	cmp.w	r3, #500	; 0x1f4
+ 80055b0:	d3d4      	bcc.n	800555c <gpsThread+0x4c>
+ 80055b2:	7862      	ldrb	r2, [r4, #1]
+ 80055b4:	4b73      	ldr	r3, [pc, #460]	; (8005784 <gpsThread+0x274>)
+ 80055b6:	4c74      	ldr	r4, [pc, #464]	; (8005788 <gpsThread+0x278>)
+ 80055b8:	eb03 03c2 	add.w	r3, r3, r2, lsl #3
+ 80055bc:	68a0      	ldr	r0, [r4, #8]
+ 80055be:	6859      	ldr	r1, [r3, #4]
+ 80055c0:	f7fc fb48 	bl	8001c54 <serialSetBaudRate>
  80055c4:	68a0      	ldr	r0, [r4, #8]
- 80055c6:	6859      	ldr	r1, [r3, #4]
- 80055c8:	f7fc fb44 	bl	8001c54 <serialSetBaudRate>
- 80055cc:	68a0      	ldr	r0, [r4, #8]
- 80055ce:	3004      	adds	r0, #4
- 80055d0:	f7fc fbbc 	bl	8001d4c <serialStartReceiveFunc>
- 80055d4:	2004      	movs	r0, #4
- 80055d6:	e7c8      	b.n	800556a <gpsThread+0x52>
- 80055d8:	496e      	ldr	r1, [pc, #440]	; (8005794 <gpsThread+0x27c>)
- 80055da:	f891 21ab 	ldrb.w	r2, [r1, #427]	; 0x1ab
- 80055de:	b122      	cbz	r2, 80055ea <gpsThread+0xd2>
- 80055e0:	2a01      	cmp	r2, #1
- 80055e2:	d010      	beq.n	8005606 <gpsThread+0xee>
- 80055e4:	2300      	movs	r3, #0
- 80055e6:	6063      	str	r3, [r4, #4]
- 80055e8:	e7bc      	b.n	8005564 <gpsThread+0x4c>
- 80055ea:	4869      	ldr	r0, [pc, #420]	; (8005790 <gpsThread+0x278>)
- 80055ec:	4b6a      	ldr	r3, [pc, #424]	; (8005798 <gpsThread+0x280>)
- 80055ee:	f840 3f08 	str.w	r3, [r0, #8]!
- 80055f2:	496a      	ldr	r1, [pc, #424]	; (800579c <gpsThread+0x284>)
- 80055f4:	4b6a      	ldr	r3, [pc, #424]	; (80057a0 <gpsThread+0x288>)
- 80055f6:	f640 12c4 	movw	r2, #2500	; 0x9c4
- 80055fa:	f007 ffd3 	bl	800d5a4 <pifGps_SetTimeout>
- 80055fe:	2005      	movs	r0, #5
- 8005600:	f7ff fe0a 	bl	8005218 <gpsSetState>
- 8005604:	e7ee      	b.n	80055e4 <gpsThread+0xcc>
- 8005606:	68e3      	ldr	r3, [r4, #12]
- 8005608:	2b31      	cmp	r3, #49	; 0x31
- 800560a:	dd33      	ble.n	8005674 <gpsThread+0x15c>
- 800560c:	2b45      	cmp	r3, #69	; 0x45
- 800560e:	dc10      	bgt.n	8005632 <gpsThread+0x11a>
- 8005610:	495c      	ldr	r1, [pc, #368]	; (8005784 <gpsThread+0x26c>)
- 8005612:	6960      	ldr	r0, [r4, #20]
- 8005614:	680a      	ldr	r2, [r1, #0]
- 8005616:	1a12      	subs	r2, r2, r0
- 8005618:	2a31      	cmp	r2, #49	; 0x31
- 800561a:	d9e3      	bls.n	80055e4 <gpsThread+0xcc>
- 800561c:	2b41      	cmp	r3, #65	; 0x41
- 800561e:	f1a3 0231 	sub.w	r2, r3, #49	; 0x31
- 8005622:	bf04      	itt	eq
- 8005624:	2314      	moveq	r3, #20
- 8005626:	60e3      	streq	r3, [r4, #12]
- 8005628:	680b      	ldr	r3, [r1, #0]
- 800562a:	bf18      	it	ne
- 800562c:	60e2      	strne	r2, [r4, #12]
- 800562e:	6163      	str	r3, [r4, #20]
- 8005630:	e7d8      	b.n	80055e4 <gpsThread+0xcc>
- 8005632:	69e2      	ldr	r2, [r4, #28]
- 8005634:	2a01      	cmp	r2, #1
- 8005636:	d10a      	bne.n	800564e <gpsThread+0x136>
- 8005638:	2b4a      	cmp	r3, #74	; 0x4a
- 800563a:	f1a3 0231 	sub.w	r2, r3, #49	; 0x31
- 800563e:	d003      	beq.n	8005648 <gpsThread+0x130>
- 8005640:	60e2      	str	r2, [r4, #12]
- 8005642:	4b50      	ldr	r3, [pc, #320]	; (8005784 <gpsThread+0x26c>)
- 8005644:	681b      	ldr	r3, [r3, #0]
- 8005646:	e7f2      	b.n	800562e <gpsThread+0x116>
- 8005648:	231e      	movs	r3, #30
- 800564a:	60e3      	str	r3, [r4, #12]
- 800564c:	e7f9      	b.n	8005642 <gpsThread+0x12a>
- 800564e:	2a02      	cmp	r2, #2
- 8005650:	d106      	bne.n	8005660 <gpsThread+0x148>
- 8005652:	4b54      	ldr	r3, [pc, #336]	; (80057a4 <gpsThread+0x28c>)
- 8005654:	2210      	movs	r2, #16
- 8005656:	4854      	ldr	r0, [pc, #336]	; (80057a8 <gpsThread+0x290>)
- 8005658:	701a      	strb	r2, [r3, #0]
- 800565a:	f7ff fedb 	bl	8005414 <_evtGpsTimeout>
- 800565e:	e7c1      	b.n	80055e4 <gpsThread+0xcc>
- 8005660:	4b48      	ldr	r3, [pc, #288]	; (8005784 <gpsThread+0x26c>)
- 8005662:	6962      	ldr	r2, [r4, #20]
- 8005664:	681b      	ldr	r3, [r3, #0]
- 8005666:	1a9b      	subs	r3, r3, r2
- 8005668:	f5b3 7ffa 	cmp.w	r3, #500	; 0x1f4
- 800566c:	d3ba      	bcc.n	80055e4 <gpsThread+0xcc>
- 800566e:	4b4d      	ldr	r3, [pc, #308]	; (80057a4 <gpsThread+0x28c>)
- 8005670:	2207      	movs	r2, #7
- 8005672:	e7f0      	b.n	8005656 <gpsThread+0x13e>
- 8005674:	2b09      	cmp	r3, #9
- 8005676:	dc08      	bgt.n	800568a <gpsThread+0x172>
- 8005678:	4b42      	ldr	r3, [pc, #264]	; (8005784 <gpsThread+0x26c>)
- 800567a:	4a4c      	ldr	r2, [pc, #304]	; (80057ac <gpsThread+0x294>)
- 800567c:	681b      	ldr	r3, [r3, #0]
- 800567e:	6163      	str	r3, [r4, #20]
- 8005680:	4b43      	ldr	r3, [pc, #268]	; (8005790 <gpsThread+0x278>)
- 8005682:	601a      	str	r2, [r3, #0]
- 8005684:	230a      	movs	r3, #10
- 8005686:	60e3      	str	r3, [r4, #12]
- 8005688:	e7ac      	b.n	80055e4 <gpsThread+0xcc>
- 800568a:	2b0f      	cmp	r3, #15
- 800568c:	f04f 0500 	mov.w	r5, #0
- 8005690:	dc13      	bgt.n	80056ba <gpsThread+0x1a2>
- 8005692:	3b0a      	subs	r3, #10
- 8005694:	4946      	ldr	r1, [pc, #280]	; (80057b0 <gpsThread+0x298>)
- 8005696:	9501      	str	r5, [sp, #4]
- 8005698:	eb03 0343 	add.w	r3, r3, r3, lsl #1
- 800569c:	440b      	add	r3, r1
- 800569e:	9300      	str	r3, [sp, #0]
- 80056a0:	2303      	movs	r3, #3
- 80056a2:	483b      	ldr	r0, [pc, #236]	; (8005790 <gpsThread+0x278>)
- 80056a4:	2106      	movs	r1, #6
- 80056a6:	f008 fd51 	bl	800e14c <pifGpsUblox_SendUbxMsg>
- 80056aa:	b118      	cbz	r0, 80056b4 <gpsThread+0x19c>
- 80056ac:	68e3      	ldr	r3, [r4, #12]
- 80056ae:	61e5      	str	r5, [r4, #28]
- 80056b0:	3332      	adds	r3, #50	; 0x32
- 80056b2:	e7ca      	b.n	800564a <gpsThread+0x132>
- 80056b4:	4b3b      	ldr	r3, [pc, #236]	; (80057a4 <gpsThread+0x28c>)
- 80056b6:	220a      	movs	r2, #10
- 80056b8:	e7cd      	b.n	8005656 <gpsThread+0x13e>
- 80056ba:	2b18      	cmp	r3, #24
- 80056bc:	dc05      	bgt.n	80056ca <gpsThread+0x1b2>
- 80056be:	3b14      	subs	r3, #20
- 80056c0:	493c      	ldr	r1, [pc, #240]	; (80057b4 <gpsThread+0x29c>)
- 80056c2:	9501      	str	r5, [sp, #4]
- 80056c4:	eb03 0343 	add.w	r3, r3, r3, lsl #1
- 80056c8:	e7e8      	b.n	800569c <gpsThread+0x184>
- 80056ca:	2b1e      	cmp	r3, #30
- 80056cc:	d105      	bne.n	80056da <gpsThread+0x1c2>
- 80056ce:	4b3a      	ldr	r3, [pc, #232]	; (80057b8 <gpsThread+0x2a0>)
- 80056d0:	9300      	str	r3, [sp, #0]
- 80056d2:	9501      	str	r5, [sp, #4]
- 80056d4:	2306      	movs	r3, #6
- 80056d6:	2208      	movs	r2, #8
- 80056d8:	e7e3      	b.n	80056a2 <gpsThread+0x18a>
- 80056da:	2b1f      	cmp	r3, #31
- 80056dc:	d105      	bne.n	80056ea <gpsThread+0x1d2>
- 80056de:	4b37      	ldr	r3, [pc, #220]	; (80057bc <gpsThread+0x2a4>)
- 80056e0:	9300      	str	r3, [sp, #0]
- 80056e2:	2324      	movs	r3, #36	; 0x24
- 80056e4:	9501      	str	r5, [sp, #4]
- 80056e6:	461a      	mov	r2, r3
- 80056e8:	e7db      	b.n	80056a2 <gpsThread+0x18a>
- 80056ea:	2b20      	cmp	r3, #32
- 80056ec:	d10c      	bne.n	8005708 <gpsThread+0x1f0>
- 80056ee:	f991 31ad 	ldrsb.w	r3, [r1, #429]	; 0x1ad
- 80056f2:	4a33      	ldr	r2, [pc, #204]	; (80057c0 <gpsThread+0x2a8>)
- 80056f4:	9501      	str	r5, [sp, #4]
- 80056f6:	2b00      	cmp	r3, #0
- 80056f8:	bfb8      	it	lt
- 80056fa:	2305      	movlt	r3, #5
- 80056fc:	eb02 03c3 	add.w	r3, r2, r3, lsl #3
- 8005700:	9300      	str	r3, [sp, #0]
- 8005702:	2216      	movs	r2, #22
- 8005704:	2308      	movs	r3, #8
- 8005706:	e7cc      	b.n	80056a2 <gpsThread+0x18a>
- 8005708:	2b21      	cmp	r3, #33	; 0x21
- 800570a:	f47f af6b 	bne.w	80055e4 <gpsThread+0xcc>
- 800570e:	4b1d      	ldr	r3, [pc, #116]	; (8005784 <gpsThread+0x26c>)
- 8005710:	6962      	ldr	r2, [r4, #20]
- 8005712:	681b      	ldr	r3, [r3, #0]
- 8005714:	1a9b      	subs	r3, r3, r2
- 8005716:	f242 720f 	movw	r2, #9999	; 0x270f
- 800571a:	4293      	cmp	r3, r2
- 800571c:	d8a7      	bhi.n	800566e <gpsThread+0x156>
- 800571e:	7e23      	ldrb	r3, [r4, #24]
- 8005720:	2b00      	cmp	r3, #0
- 8005722:	f43f af5f 	beq.w	80055e4 <gpsThread+0xcc>
- 8005726:	4b1e      	ldr	r3, [pc, #120]	; (80057a0 <gpsThread+0x288>)
- 8005728:	491c      	ldr	r1, [pc, #112]	; (800579c <gpsThread+0x284>)
- 800572a:	481f      	ldr	r0, [pc, #124]	; (80057a8 <gpsThread+0x290>)
- 800572c:	f640 12c4 	movw	r2, #2500	; 0x9c4
- 8005730:	e763      	b.n	80055fa <gpsThread+0xe2>
- 8005732:	2300      	movs	r3, #0
- 8005734:	461a      	mov	r2, r3
- 8005736:	4919      	ldr	r1, [pc, #100]	; (800579c <gpsThread+0x284>)
- 8005738:	481b      	ldr	r0, [pc, #108]	; (80057a8 <gpsThread+0x290>)
- 800573a:	f007 ff33 	bl	800d5a4 <pifGps_SetTimeout>
- 800573e:	6863      	ldr	r3, [r4, #4]
- 8005740:	3301      	adds	r3, #1
- 8005742:	6063      	str	r3, [r4, #4]
- 8005744:	4b13      	ldr	r3, [pc, #76]	; (8005794 <gpsThread+0x27c>)
- 8005746:	f893 31ae 	ldrb.w	r3, [r3, #430]	; 0x1ae
- 800574a:	b14b      	cbz	r3, 8005760 <gpsThread+0x248>
- 800574c:	7863      	ldrb	r3, [r4, #1]
- 800574e:	3301      	adds	r3, #1
- 8005750:	b2db      	uxtb	r3, r3
- 8005752:	2205      	movs	r2, #5
- 8005754:	fbb3 f2f2 	udiv	r2, r3, r2
- 8005758:	eb02 0282 	add.w	r2, r2, r2, lsl #2
- 800575c:	1a9b      	subs	r3, r3, r2
- 800575e:	7063      	strb	r3, [r4, #1]
- 8005760:	4b08      	ldr	r3, [pc, #32]	; (8005784 <gpsThread+0x26c>)
- 8005762:	4a18      	ldr	r2, [pc, #96]	; (80057c4 <gpsThread+0x2ac>)
- 8005764:	681b      	ldr	r3, [r3, #0]
- 8005766:	60a3      	str	r3, [r4, #8]
- 8005768:	2300      	movs	r3, #0
- 800576a:	7013      	strb	r3, [r2, #0]
- 800576c:	4a16      	ldr	r2, [pc, #88]	; (80057c8 <gpsThread+0x2b0>)
- 800576e:	72d3      	strb	r3, [r2, #11]
- 8005770:	2001      	movs	r0, #1
- 8005772:	e6fa      	b.n	800556a <gpsThread+0x52>
- 8005774:	f640 31b7 	movw	r1, #2999	; 0xbb7
- 8005778:	428b      	cmp	r3, r1
- 800577a:	f63f aee8 	bhi.w	800554e <gpsThread+0x36>
- 800577e:	e6f1      	b.n	8005564 <gpsThread+0x4c>
- 8005780:	20000f10 	.word	0x20000f10
- 8005784:	20001cbc 	.word	0x20001cbc
- 8005788:	08019324 	.word	0x08019324
- 800578c:	20000440 	.word	0x20000440
- 8005790:	20000f38 	.word	0x20000f38
- 8005794:	2000090c 	.word	0x2000090c
- 8005798:	08005239 	.word	0x08005239
- 800579c:	20001474 	.word	0x20001474
- 80057a0:	08005415 	.word	0x08005415
- 80057a4:	20001cc8 	.word	0x20001cc8
- 80057a8:	20000f40 	.word	0x20000f40
- 80057ac:	08005309 	.word	0x08005309
- 80057b0:	0801935b 	.word	0x0801935b
- 80057b4:	0801934c 	.word	0x0801934c
- 80057b8:	08019391 	.word	0x08019391
- 80057bc:	0801936d 	.word	0x0801936d
- 80057c0:	08019397 	.word	0x08019397
- 80057c4:	20001659 	.word	0x20001659
- 80057c8:	20001764 	.word	0x20001764
+ 80055c6:	3004      	adds	r0, #4
+ 80055c8:	f7fc fbc0 	bl	8001d4c <serialStartReceiveFunc>
+ 80055cc:	2004      	movs	r0, #4
+ 80055ce:	e7c8      	b.n	8005562 <gpsThread+0x52>
+ 80055d0:	486f      	ldr	r0, [pc, #444]	; (8005790 <gpsThread+0x280>)
+ 80055d2:	f890 21ab 	ldrb.w	r2, [r0, #427]	; 0x1ab
+ 80055d6:	b122      	cbz	r2, 80055e2 <gpsThread+0xd2>
+ 80055d8:	2a01      	cmp	r2, #1
+ 80055da:	d010      	beq.n	80055fe <gpsThread+0xee>
+ 80055dc:	2300      	movs	r3, #0
+ 80055de:	6063      	str	r3, [r4, #4]
+ 80055e0:	e7bc      	b.n	800555c <gpsThread+0x4c>
+ 80055e2:	486a      	ldr	r0, [pc, #424]	; (800578c <gpsThread+0x27c>)
+ 80055e4:	4b6b      	ldr	r3, [pc, #428]	; (8005794 <gpsThread+0x284>)
+ 80055e6:	f840 3f08 	str.w	r3, [r0, #8]!
+ 80055ea:	496b      	ldr	r1, [pc, #428]	; (8005798 <gpsThread+0x288>)
+ 80055ec:	4b6b      	ldr	r3, [pc, #428]	; (800579c <gpsThread+0x28c>)
+ 80055ee:	f640 12c4 	movw	r2, #2500	; 0x9c4
+ 80055f2:	f007 ffd7 	bl	800d5a4 <pifGps_SetTimeout>
+ 80055f6:	2005      	movs	r0, #5
+ 80055f8:	f7ff fe0e 	bl	8005218 <gpsSetState>
+ 80055fc:	e7ee      	b.n	80055dc <gpsThread+0xcc>
+ 80055fe:	68e3      	ldr	r3, [r4, #12]
+ 8005600:	2b31      	cmp	r3, #49	; 0x31
+ 8005602:	dd32      	ble.n	800566a <gpsThread+0x15a>
+ 8005604:	2b45      	cmp	r3, #69	; 0x45
+ 8005606:	dc10      	bgt.n	800562a <gpsThread+0x11a>
+ 8005608:	495d      	ldr	r1, [pc, #372]	; (8005780 <gpsThread+0x270>)
+ 800560a:	6960      	ldr	r0, [r4, #20]
+ 800560c:	680a      	ldr	r2, [r1, #0]
+ 800560e:	1a12      	subs	r2, r2, r0
+ 8005610:	2a31      	cmp	r2, #49	; 0x31
+ 8005612:	d9e3      	bls.n	80055dc <gpsThread+0xcc>
+ 8005614:	2b41      	cmp	r3, #65	; 0x41
+ 8005616:	f1a3 0231 	sub.w	r2, r3, #49	; 0x31
+ 800561a:	bf04      	itt	eq
+ 800561c:	2314      	moveq	r3, #20
+ 800561e:	60e3      	streq	r3, [r4, #12]
+ 8005620:	680b      	ldr	r3, [r1, #0]
+ 8005622:	bf18      	it	ne
+ 8005624:	60e2      	strne	r2, [r4, #12]
+ 8005626:	6163      	str	r3, [r4, #20]
+ 8005628:	e7d8      	b.n	80055dc <gpsThread+0xcc>
+ 800562a:	69e2      	ldr	r2, [r4, #28]
+ 800562c:	2a01      	cmp	r2, #1
+ 800562e:	d10a      	bne.n	8005646 <gpsThread+0x136>
+ 8005630:	2b4a      	cmp	r3, #74	; 0x4a
+ 8005632:	f1a3 0231 	sub.w	r2, r3, #49	; 0x31
+ 8005636:	d003      	beq.n	8005640 <gpsThread+0x130>
+ 8005638:	60e2      	str	r2, [r4, #12]
+ 800563a:	4b51      	ldr	r3, [pc, #324]	; (8005780 <gpsThread+0x270>)
+ 800563c:	681b      	ldr	r3, [r3, #0]
+ 800563e:	e7f2      	b.n	8005626 <gpsThread+0x116>
+ 8005640:	231e      	movs	r3, #30
+ 8005642:	60e3      	str	r3, [r4, #12]
+ 8005644:	e7f9      	b.n	800563a <gpsThread+0x12a>
+ 8005646:	b932      	cbnz	r2, 8005656 <gpsThread+0x146>
+ 8005648:	4b55      	ldr	r3, [pc, #340]	; (80057a0 <gpsThread+0x290>)
+ 800564a:	2210      	movs	r2, #16
+ 800564c:	4855      	ldr	r0, [pc, #340]	; (80057a4 <gpsThread+0x294>)
+ 800564e:	701a      	strb	r2, [r3, #0]
+ 8005650:	f7ff fedc 	bl	800540c <_evtGpsTimeout>
+ 8005654:	e7c2      	b.n	80055dc <gpsThread+0xcc>
+ 8005656:	4b4a      	ldr	r3, [pc, #296]	; (8005780 <gpsThread+0x270>)
+ 8005658:	6962      	ldr	r2, [r4, #20]
+ 800565a:	681b      	ldr	r3, [r3, #0]
+ 800565c:	1a9b      	subs	r3, r3, r2
+ 800565e:	f5b3 7ffa 	cmp.w	r3, #500	; 0x1f4
+ 8005662:	d3bb      	bcc.n	80055dc <gpsThread+0xcc>
+ 8005664:	4b4e      	ldr	r3, [pc, #312]	; (80057a0 <gpsThread+0x290>)
+ 8005666:	2207      	movs	r2, #7
+ 8005668:	e7f0      	b.n	800564c <gpsThread+0x13c>
+ 800566a:	2b09      	cmp	r3, #9
+ 800566c:	dc08      	bgt.n	8005680 <gpsThread+0x170>
+ 800566e:	4b44      	ldr	r3, [pc, #272]	; (8005780 <gpsThread+0x270>)
+ 8005670:	4a4d      	ldr	r2, [pc, #308]	; (80057a8 <gpsThread+0x298>)
+ 8005672:	681b      	ldr	r3, [r3, #0]
+ 8005674:	6163      	str	r3, [r4, #20]
+ 8005676:	4b45      	ldr	r3, [pc, #276]	; (800578c <gpsThread+0x27c>)
+ 8005678:	601a      	str	r2, [r3, #0]
+ 800567a:	230a      	movs	r3, #10
+ 800567c:	60e3      	str	r3, [r4, #12]
+ 800567e:	e7ad      	b.n	80055dc <gpsThread+0xcc>
+ 8005680:	2b0f      	cmp	r3, #15
+ 8005682:	f04f 0100 	mov.w	r1, #0
+ 8005686:	dc15      	bgt.n	80056b4 <gpsThread+0x1a4>
+ 8005688:	9101      	str	r1, [sp, #4]
+ 800568a:	3b0a      	subs	r3, #10
+ 800568c:	4947      	ldr	r1, [pc, #284]	; (80057ac <gpsThread+0x29c>)
+ 800568e:	eb03 0343 	add.w	r3, r3, r3, lsl #1
+ 8005692:	440b      	add	r3, r1
+ 8005694:	9300      	str	r3, [sp, #0]
+ 8005696:	2303      	movs	r3, #3
+ 8005698:	483c      	ldr	r0, [pc, #240]	; (800578c <gpsThread+0x27c>)
+ 800569a:	2106      	movs	r1, #6
+ 800569c:	f008 fd56 	bl	800e14c <pifGpsUblox_SendUbxMsg>
+ 80056a0:	b128      	cbz	r0, 80056ae <gpsThread+0x19e>
+ 80056a2:	f04f 33ff 	mov.w	r3, #4294967295
+ 80056a6:	61e3      	str	r3, [r4, #28]
+ 80056a8:	68e3      	ldr	r3, [r4, #12]
+ 80056aa:	3332      	adds	r3, #50	; 0x32
+ 80056ac:	e7c9      	b.n	8005642 <gpsThread+0x132>
+ 80056ae:	4b3c      	ldr	r3, [pc, #240]	; (80057a0 <gpsThread+0x290>)
+ 80056b0:	220a      	movs	r2, #10
+ 80056b2:	e7cb      	b.n	800564c <gpsThread+0x13c>
+ 80056b4:	2b18      	cmp	r3, #24
+ 80056b6:	dc05      	bgt.n	80056c4 <gpsThread+0x1b4>
+ 80056b8:	3b14      	subs	r3, #20
+ 80056ba:	9101      	str	r1, [sp, #4]
+ 80056bc:	eb03 0343 	add.w	r3, r3, r3, lsl #1
+ 80056c0:	493b      	ldr	r1, [pc, #236]	; (80057b0 <gpsThread+0x2a0>)
+ 80056c2:	e7e6      	b.n	8005692 <gpsThread+0x182>
+ 80056c4:	2b1e      	cmp	r3, #30
+ 80056c6:	d105      	bne.n	80056d4 <gpsThread+0x1c4>
+ 80056c8:	4b3a      	ldr	r3, [pc, #232]	; (80057b4 <gpsThread+0x2a4>)
+ 80056ca:	9300      	str	r3, [sp, #0]
+ 80056cc:	9101      	str	r1, [sp, #4]
+ 80056ce:	2306      	movs	r3, #6
+ 80056d0:	2208      	movs	r2, #8
+ 80056d2:	e7e1      	b.n	8005698 <gpsThread+0x188>
+ 80056d4:	2b1f      	cmp	r3, #31
+ 80056d6:	d105      	bne.n	80056e4 <gpsThread+0x1d4>
+ 80056d8:	4b37      	ldr	r3, [pc, #220]	; (80057b8 <gpsThread+0x2a8>)
+ 80056da:	9300      	str	r3, [sp, #0]
+ 80056dc:	2324      	movs	r3, #36	; 0x24
+ 80056de:	9101      	str	r1, [sp, #4]
+ 80056e0:	461a      	mov	r2, r3
+ 80056e2:	e7d9      	b.n	8005698 <gpsThread+0x188>
+ 80056e4:	2b20      	cmp	r3, #32
+ 80056e6:	d10c      	bne.n	8005702 <gpsThread+0x1f2>
+ 80056e8:	f990 31ad 	ldrsb.w	r3, [r0, #429]	; 0x1ad
+ 80056ec:	4a33      	ldr	r2, [pc, #204]	; (80057bc <gpsThread+0x2ac>)
+ 80056ee:	9101      	str	r1, [sp, #4]
+ 80056f0:	2b00      	cmp	r3, #0
+ 80056f2:	bfb8      	it	lt
+ 80056f4:	2305      	movlt	r3, #5
+ 80056f6:	eb02 03c3 	add.w	r3, r2, r3, lsl #3
+ 80056fa:	9300      	str	r3, [sp, #0]
+ 80056fc:	2216      	movs	r2, #22
+ 80056fe:	2308      	movs	r3, #8
+ 8005700:	e7ca      	b.n	8005698 <gpsThread+0x188>
+ 8005702:	2b21      	cmp	r3, #33	; 0x21
+ 8005704:	f47f af6a 	bne.w	80055dc <gpsThread+0xcc>
+ 8005708:	4b1d      	ldr	r3, [pc, #116]	; (8005780 <gpsThread+0x270>)
+ 800570a:	6962      	ldr	r2, [r4, #20]
+ 800570c:	681b      	ldr	r3, [r3, #0]
+ 800570e:	1a9b      	subs	r3, r3, r2
+ 8005710:	f242 720f 	movw	r2, #9999	; 0x270f
+ 8005714:	4293      	cmp	r3, r2
+ 8005716:	d8a5      	bhi.n	8005664 <gpsThread+0x154>
+ 8005718:	7e23      	ldrb	r3, [r4, #24]
+ 800571a:	2b00      	cmp	r3, #0
+ 800571c:	f43f af5e 	beq.w	80055dc <gpsThread+0xcc>
+ 8005720:	4b1e      	ldr	r3, [pc, #120]	; (800579c <gpsThread+0x28c>)
+ 8005722:	491d      	ldr	r1, [pc, #116]	; (8005798 <gpsThread+0x288>)
+ 8005724:	481f      	ldr	r0, [pc, #124]	; (80057a4 <gpsThread+0x294>)
+ 8005726:	f640 12c4 	movw	r2, #2500	; 0x9c4
+ 800572a:	e762      	b.n	80055f2 <gpsThread+0xe2>
+ 800572c:	2300      	movs	r3, #0
+ 800572e:	461a      	mov	r2, r3
+ 8005730:	4919      	ldr	r1, [pc, #100]	; (8005798 <gpsThread+0x288>)
+ 8005732:	481c      	ldr	r0, [pc, #112]	; (80057a4 <gpsThread+0x294>)
+ 8005734:	f007 ff36 	bl	800d5a4 <pifGps_SetTimeout>
+ 8005738:	6863      	ldr	r3, [r4, #4]
+ 800573a:	3301      	adds	r3, #1
+ 800573c:	6063      	str	r3, [r4, #4]
+ 800573e:	4b14      	ldr	r3, [pc, #80]	; (8005790 <gpsThread+0x280>)
+ 8005740:	f893 31ae 	ldrb.w	r3, [r3, #430]	; 0x1ae
+ 8005744:	b14b      	cbz	r3, 800575a <gpsThread+0x24a>
+ 8005746:	7863      	ldrb	r3, [r4, #1]
+ 8005748:	3301      	adds	r3, #1
+ 800574a:	b2db      	uxtb	r3, r3
+ 800574c:	2205      	movs	r2, #5
+ 800574e:	fbb3 f2f2 	udiv	r2, r3, r2
+ 8005752:	eb02 0282 	add.w	r2, r2, r2, lsl #2
+ 8005756:	1a9b      	subs	r3, r3, r2
+ 8005758:	7063      	strb	r3, [r4, #1]
+ 800575a:	4b09      	ldr	r3, [pc, #36]	; (8005780 <gpsThread+0x270>)
+ 800575c:	4a18      	ldr	r2, [pc, #96]	; (80057c0 <gpsThread+0x2b0>)
+ 800575e:	681b      	ldr	r3, [r3, #0]
+ 8005760:	60a3      	str	r3, [r4, #8]
+ 8005762:	2300      	movs	r3, #0
+ 8005764:	7013      	strb	r3, [r2, #0]
+ 8005766:	4a17      	ldr	r2, [pc, #92]	; (80057c4 <gpsThread+0x2b4>)
+ 8005768:	72d3      	strb	r3, [r2, #11]
+ 800576a:	2001      	movs	r0, #1
+ 800576c:	e6f9      	b.n	8005562 <gpsThread+0x52>
+ 800576e:	f640 31b7 	movw	r1, #2999	; 0xbb7
+ 8005772:	428b      	cmp	r3, r1
+ 8005774:	f63f aee7 	bhi.w	8005546 <gpsThread+0x36>
+ 8005778:	e6f0      	b.n	800555c <gpsThread+0x4c>
+ 800577a:	bf00      	nop
+ 800577c:	20000f10 	.word	0x20000f10
+ 8005780:	20001cbc 	.word	0x20001cbc
+ 8005784:	08019324 	.word	0x08019324
+ 8005788:	20000440 	.word	0x20000440
+ 800578c:	20000f38 	.word	0x20000f38
+ 8005790:	2000090c 	.word	0x2000090c
+ 8005794:	08005239 	.word	0x08005239
+ 8005798:	20001474 	.word	0x20001474
+ 800579c:	0800540d 	.word	0x0800540d
+ 80057a0:	20001cc8 	.word	0x20001cc8
+ 80057a4:	20000f40 	.word	0x20000f40
+ 80057a8:	08005309 	.word	0x08005309
+ 80057ac:	0801935b 	.word	0x0801935b
+ 80057b0:	0801934c 	.word	0x0801934c
+ 80057b4:	08019391 	.word	0x08019391
+ 80057b8:	0801936d 	.word	0x0801936d
+ 80057bc:	08019397 	.word	0x08019397
+ 80057c0:	20001659 	.word	0x20001659
+ 80057c4:	20001764 	.word	0x20001764
 
-080057cc <gpsPollSvinfo>:
- 80057cc:	b573      	push	{r0, r1, r4, r5, r6, lr}
- 80057ce:	4b19      	ldr	r3, [pc, #100]	; (8005834 <gpsPollSvinfo+0x68>)
- 80057d0:	f893 61ab 	ldrb.w	r6, [r3, #427]	; 0x1ab
- 80057d4:	2e01      	cmp	r6, #1
- 80057d6:	d12b      	bne.n	8005830 <gpsPollSvinfo+0x64>
- 80057d8:	4c17      	ldr	r4, [pc, #92]	; (8005838 <gpsPollSvinfo+0x6c>)
- 80057da:	4b18      	ldr	r3, [pc, #96]	; (800583c <gpsPollSvinfo+0x70>)
- 80057dc:	f894 50b8 	ldrb.w	r5, [r4, #184]	; 0xb8
- 80057e0:	4817      	ldr	r0, [pc, #92]	; (8005840 <gpsPollSvinfo+0x74>)
- 80057e2:	701d      	strb	r5, [r3, #0]
- 80057e4:	462a      	mov	r2, r5
- 80057e6:	f104 01b9 	add.w	r1, r4, #185	; 0xb9
- 80057ea:	f00e fcf5 	bl	80141d8 <memcpy>
- 80057ee:	462a      	mov	r2, r5
- 80057f0:	f104 01c9 	add.w	r1, r4, #201	; 0xc9
- 80057f4:	4813      	ldr	r0, [pc, #76]	; (8005844 <gpsPollSvinfo+0x78>)
- 80057f6:	f00e fcef 	bl	80141d8 <memcpy>
- 80057fa:	462a      	mov	r2, r5
- 80057fc:	f104 01d9 	add.w	r1, r4, #217	; 0xd9
- 8005800:	4811      	ldr	r0, [pc, #68]	; (8005848 <gpsPollSvinfo+0x7c>)
- 8005802:	f00e fce9 	bl	80141d8 <memcpy>
- 8005806:	462a      	mov	r2, r5
- 8005808:	f104 01e9 	add.w	r1, r4, #233	; 0xe9
- 800580c:	480f      	ldr	r0, [pc, #60]	; (800584c <gpsPollSvinfo+0x80>)
- 800580e:	f00e fce3 	bl	80141d8 <memcpy>
- 8005812:	4b0f      	ldr	r3, [pc, #60]	; (8005850 <gpsPollSvinfo+0x84>)
- 8005814:	f8d4 20fc 	ldr.w	r2, [r4, #252]	; 0xfc
- 8005818:	601a      	str	r2, [r3, #0]
- 800581a:	f8d4 2100 	ldr.w	r2, [r4, #256]	; 0x100
- 800581e:	605a      	str	r2, [r3, #4]
- 8005820:	2300      	movs	r3, #0
- 8005822:	e9cd 3300 	strd	r3, r3, [sp]
- 8005826:	2230      	movs	r2, #48	; 0x30
- 8005828:	4631      	mov	r1, r6
- 800582a:	4620      	mov	r0, r4
- 800582c:	f008 fc8e 	bl	800e14c <pifGpsUblox_SendUbxMsg>
- 8005830:	b002      	add	sp, #8
- 8005832:	bd70      	pop	{r4, r5, r6, pc}
- 8005834:	2000090c 	.word	0x2000090c
- 8005838:	20000f38 	.word	0x20000f38
- 800583c:	20001658 	.word	0x20001658
- 8005840:	2000165c 	.word	0x2000165c
- 8005844:	200016c4 	.word	0x200016c4
- 8005848:	2000169c 	.word	0x2000169c
- 800584c:	2000167c 	.word	0x2000167c
- 8005850:	200016bc 	.word	0x200016bc
+080057c8 <gpsPollSvinfo>:
+ 80057c8:	b573      	push	{r0, r1, r4, r5, r6, lr}
+ 80057ca:	4b19      	ldr	r3, [pc, #100]	; (8005830 <gpsPollSvinfo+0x68>)
+ 80057cc:	f893 61ab 	ldrb.w	r6, [r3, #427]	; 0x1ab
+ 80057d0:	2e01      	cmp	r6, #1
+ 80057d2:	d12b      	bne.n	800582c <gpsPollSvinfo+0x64>
+ 80057d4:	4c17      	ldr	r4, [pc, #92]	; (8005834 <gpsPollSvinfo+0x6c>)
+ 80057d6:	4b18      	ldr	r3, [pc, #96]	; (8005838 <gpsPollSvinfo+0x70>)
+ 80057d8:	f894 50b8 	ldrb.w	r5, [r4, #184]	; 0xb8
+ 80057dc:	4817      	ldr	r0, [pc, #92]	; (800583c <gpsPollSvinfo+0x74>)
+ 80057de:	701d      	strb	r5, [r3, #0]
+ 80057e0:	462a      	mov	r2, r5
+ 80057e2:	f104 01b9 	add.w	r1, r4, #185	; 0xb9
+ 80057e6:	f00e fcf7 	bl	80141d8 <memcpy>
+ 80057ea:	462a      	mov	r2, r5
+ 80057ec:	f104 01c9 	add.w	r1, r4, #201	; 0xc9
+ 80057f0:	4813      	ldr	r0, [pc, #76]	; (8005840 <gpsPollSvinfo+0x78>)
+ 80057f2:	f00e fcf1 	bl	80141d8 <memcpy>
+ 80057f6:	462a      	mov	r2, r5
+ 80057f8:	f104 01d9 	add.w	r1, r4, #217	; 0xd9
+ 80057fc:	4811      	ldr	r0, [pc, #68]	; (8005844 <gpsPollSvinfo+0x7c>)
+ 80057fe:	f00e fceb 	bl	80141d8 <memcpy>
+ 8005802:	462a      	mov	r2, r5
+ 8005804:	f104 01e9 	add.w	r1, r4, #233	; 0xe9
+ 8005808:	480f      	ldr	r0, [pc, #60]	; (8005848 <gpsPollSvinfo+0x80>)
+ 800580a:	f00e fce5 	bl	80141d8 <memcpy>
+ 800580e:	4b0f      	ldr	r3, [pc, #60]	; (800584c <gpsPollSvinfo+0x84>)
+ 8005810:	f8d4 20fc 	ldr.w	r2, [r4, #252]	; 0xfc
+ 8005814:	601a      	str	r2, [r3, #0]
+ 8005816:	f8d4 2100 	ldr.w	r2, [r4, #256]	; 0x100
+ 800581a:	605a      	str	r2, [r3, #4]
+ 800581c:	2300      	movs	r3, #0
+ 800581e:	e9cd 3300 	strd	r3, r3, [sp]
+ 8005822:	2230      	movs	r2, #48	; 0x30
+ 8005824:	4631      	mov	r1, r6
+ 8005826:	4620      	mov	r0, r4
+ 8005828:	f008 fc90 	bl	800e14c <pifGpsUblox_SendUbxMsg>
+ 800582c:	b002      	add	sp, #8
+ 800582e:	bd70      	pop	{r4, r5, r6, pc}
+ 8005830:	2000090c 	.word	0x2000090c
+ 8005834:	20000f38 	.word	0x20000f38
+ 8005838:	20001658 	.word	0x20001658
+ 800583c:	2000165c 	.word	0x2000165c
+ 8005840:	200016c4 	.word	0x200016c4
+ 8005844:	2000169c 	.word	0x2000169c
+ 8005848:	2000167c 	.word	0x2000167c
+ 800584c:	200016bc 	.word	0x200016bc
 
-08005854 <GPS_reset_home_position>:
- 8005854:	b538      	push	{r3, r4, r5, lr}
- 8005856:	4d0c      	ldr	r5, [pc, #48]	; (8005888 <GPS_reset_home_position+0x34>)
- 8005858:	7aeb      	ldrb	r3, [r5, #11]
- 800585a:	b1a3      	cbz	r3, 8005886 <GPS_reset_home_position+0x32>
- 800585c:	4b0b      	ldr	r3, [pc, #44]	; (800588c <GPS_reset_home_position+0x38>)
- 800585e:	781b      	ldrb	r3, [r3, #0]
- 8005860:	2b04      	cmp	r3, #4
- 8005862:	d910      	bls.n	8005886 <GPS_reset_home_position+0x32>
- 8005864:	4b0a      	ldr	r3, [pc, #40]	; (8005890 <GPS_reset_home_position+0x3c>)
- 8005866:	4c0b      	ldr	r4, [pc, #44]	; (8005894 <GPS_reset_home_position+0x40>)
- 8005868:	6818      	ldr	r0, [r3, #0]
- 800586a:	685b      	ldr	r3, [r3, #4]
- 800586c:	6063      	str	r3, [r4, #4]
- 800586e:	6020      	str	r0, [r4, #0]
- 8005870:	f7ff fde6 	bl	8005440 <GPS_calc_longitude_scaling>
- 8005874:	4b08      	ldr	r3, [pc, #32]	; (8005898 <GPS_reset_home_position+0x44>)
- 8005876:	881a      	ldrh	r2, [r3, #0]
- 8005878:	4b08      	ldr	r3, [pc, #32]	; (800589c <GPS_reset_home_position+0x48>)
- 800587a:	801a      	strh	r2, [r3, #0]
- 800587c:	4b08      	ldr	r3, [pc, #32]	; (80058a0 <GPS_reset_home_position+0x4c>)
- 800587e:	881b      	ldrh	r3, [r3, #0]
- 8005880:	60a3      	str	r3, [r4, #8]
- 8005882:	2301      	movs	r3, #1
- 8005884:	732b      	strb	r3, [r5, #12]
- 8005886:	bd38      	pop	{r3, r4, r5, pc}
- 8005888:	20001764 	.word	0x20001764
- 800588c:	20001659 	.word	0x20001659
- 8005890:	20001630 	.word	0x20001630
- 8005894:	2000164c 	.word	0x2000164c
- 8005898:	20001a58 	.word	0x20001a58
- 800589c:	20001244 	.word	0x20001244
- 80058a0:	20001628 	.word	0x20001628
+08005850 <GPS_reset_home_position>:
+ 8005850:	b538      	push	{r3, r4, r5, lr}
+ 8005852:	4d0c      	ldr	r5, [pc, #48]	; (8005884 <GPS_reset_home_position+0x34>)
+ 8005854:	7aeb      	ldrb	r3, [r5, #11]
+ 8005856:	b1a3      	cbz	r3, 8005882 <GPS_reset_home_position+0x32>
+ 8005858:	4b0b      	ldr	r3, [pc, #44]	; (8005888 <GPS_reset_home_position+0x38>)
+ 800585a:	781b      	ldrb	r3, [r3, #0]
+ 800585c:	2b04      	cmp	r3, #4
+ 800585e:	d910      	bls.n	8005882 <GPS_reset_home_position+0x32>
+ 8005860:	4b0a      	ldr	r3, [pc, #40]	; (800588c <GPS_reset_home_position+0x3c>)
+ 8005862:	4c0b      	ldr	r4, [pc, #44]	; (8005890 <GPS_reset_home_position+0x40>)
+ 8005864:	6818      	ldr	r0, [r3, #0]
+ 8005866:	685b      	ldr	r3, [r3, #4]
+ 8005868:	6063      	str	r3, [r4, #4]
+ 800586a:	6020      	str	r0, [r4, #0]
+ 800586c:	f7ff fde4 	bl	8005438 <GPS_calc_longitude_scaling>
+ 8005870:	4b08      	ldr	r3, [pc, #32]	; (8005894 <GPS_reset_home_position+0x44>)
+ 8005872:	881a      	ldrh	r2, [r3, #0]
+ 8005874:	4b08      	ldr	r3, [pc, #32]	; (8005898 <GPS_reset_home_position+0x48>)
+ 8005876:	801a      	strh	r2, [r3, #0]
+ 8005878:	4b08      	ldr	r3, [pc, #32]	; (800589c <GPS_reset_home_position+0x4c>)
+ 800587a:	881b      	ldrh	r3, [r3, #0]
+ 800587c:	60a3      	str	r3, [r4, #8]
+ 800587e:	2301      	movs	r3, #1
+ 8005880:	732b      	strb	r3, [r5, #12]
+ 8005882:	bd38      	pop	{r3, r4, r5, pc}
+ 8005884:	20001764 	.word	0x20001764
+ 8005888:	20001659 	.word	0x20001659
+ 800588c:	20001630 	.word	0x20001630
+ 8005890:	2000164c 	.word	0x2000164c
+ 8005894:	20001a58 	.word	0x20001a58
+ 8005898:	20001244 	.word	0x20001244
+ 800589c:	20001628 	.word	0x20001628
 
-080058a4 <GPS_reset_nav>:
- 80058a4:	b470      	push	{r4, r5, r6}
- 80058a6:	4810      	ldr	r0, [pc, #64]	; (80058e8 <GPS_reset_nav+0x44>)
- 80058a8:	4910      	ldr	r1, [pc, #64]	; (80058ec <GPS_reset_nav+0x48>)
- 80058aa:	4e11      	ldr	r6, [pc, #68]	; (80058f0 <GPS_reset_nav+0x4c>)
- 80058ac:	4d11      	ldr	r5, [pc, #68]	; (80058f4 <GPS_reset_nav+0x50>)
- 80058ae:	4c12      	ldr	r4, [pc, #72]	; (80058f8 <GPS_reset_nav+0x54>)
- 80058b0:	2300      	movs	r3, #0
- 80058b2:	8033      	strh	r3, [r6, #0]
- 80058b4:	802b      	strh	r3, [r5, #0]
- 80058b6:	8023      	strh	r3, [r4, #0]
- 80058b8:	6043      	str	r3, [r0, #4]
- 80058ba:	604b      	str	r3, [r1, #4]
- 80058bc:	8073      	strh	r3, [r6, #2]
- 80058be:	806b      	strh	r3, [r5, #2]
- 80058c0:	8063      	strh	r3, [r4, #2]
- 80058c2:	6183      	str	r3, [r0, #24]
- 80058c4:	618b      	str	r3, [r1, #24]
- 80058c6:	4b0d      	ldr	r3, [pc, #52]	; (80058fc <GPS_reset_nav+0x58>)
- 80058c8:	7c1b      	ldrb	r3, [r3, #16]
- 80058ca:	2200      	movs	r2, #0
- 80058cc:	6002      	str	r2, [r0, #0]
- 80058ce:	6082      	str	r2, [r0, #8]
- 80058d0:	600a      	str	r2, [r1, #0]
- 80058d2:	608a      	str	r2, [r1, #8]
- 80058d4:	6142      	str	r2, [r0, #20]
- 80058d6:	61c2      	str	r2, [r0, #28]
- 80058d8:	614a      	str	r2, [r1, #20]
- 80058da:	61ca      	str	r2, [r1, #28]
- 80058dc:	b113      	cbz	r3, 80058e4 <GPS_reset_nav+0x40>
- 80058de:	bc70      	pop	{r4, r5, r6}
- 80058e0:	f7ff b914 	b.w	8004b0c <fw_nav_reset>
- 80058e4:	bc70      	pop	{r4, r5, r6}
- 80058e6:	4770      	bx	lr
- 80058e8:	2000125c 	.word	0x2000125c
- 80058ec:	20001204 	.word	0x20001204
- 80058f0:	2000162a 	.word	0x2000162a
- 80058f4:	200017ee 	.word	0x200017ee
- 80058f8:	200017e8 	.word	0x200017e8
- 80058fc:	20001764 	.word	0x20001764
+080058a0 <GPS_reset_nav>:
+ 80058a0:	b470      	push	{r4, r5, r6}
+ 80058a2:	4810      	ldr	r0, [pc, #64]	; (80058e4 <GPS_reset_nav+0x44>)
+ 80058a4:	4910      	ldr	r1, [pc, #64]	; (80058e8 <GPS_reset_nav+0x48>)
+ 80058a6:	4e11      	ldr	r6, [pc, #68]	; (80058ec <GPS_reset_nav+0x4c>)
+ 80058a8:	4d11      	ldr	r5, [pc, #68]	; (80058f0 <GPS_reset_nav+0x50>)
+ 80058aa:	4c12      	ldr	r4, [pc, #72]	; (80058f4 <GPS_reset_nav+0x54>)
+ 80058ac:	2300      	movs	r3, #0
+ 80058ae:	8033      	strh	r3, [r6, #0]
+ 80058b0:	802b      	strh	r3, [r5, #0]
+ 80058b2:	8023      	strh	r3, [r4, #0]
+ 80058b4:	6043      	str	r3, [r0, #4]
+ 80058b6:	604b      	str	r3, [r1, #4]
+ 80058b8:	8073      	strh	r3, [r6, #2]
+ 80058ba:	806b      	strh	r3, [r5, #2]
+ 80058bc:	8063      	strh	r3, [r4, #2]
+ 80058be:	6183      	str	r3, [r0, #24]
+ 80058c0:	618b      	str	r3, [r1, #24]
+ 80058c2:	4b0d      	ldr	r3, [pc, #52]	; (80058f8 <GPS_reset_nav+0x58>)
+ 80058c4:	7c1b      	ldrb	r3, [r3, #16]
+ 80058c6:	2200      	movs	r2, #0
+ 80058c8:	6002      	str	r2, [r0, #0]
+ 80058ca:	6082      	str	r2, [r0, #8]
+ 80058cc:	600a      	str	r2, [r1, #0]
+ 80058ce:	608a      	str	r2, [r1, #8]
+ 80058d0:	6142      	str	r2, [r0, #20]
+ 80058d2:	61c2      	str	r2, [r0, #28]
+ 80058d4:	614a      	str	r2, [r1, #20]
+ 80058d6:	61ca      	str	r2, [r1, #28]
+ 80058d8:	b113      	cbz	r3, 80058e0 <GPS_reset_nav+0x40>
+ 80058da:	bc70      	pop	{r4, r5, r6}
+ 80058dc:	f7ff b916 	b.w	8004b0c <fw_nav_reset>
+ 80058e0:	bc70      	pop	{r4, r5, r6}
+ 80058e2:	4770      	bx	lr
+ 80058e4:	2000125c 	.word	0x2000125c
+ 80058e8:	20001204 	.word	0x20001204
+ 80058ec:	2000162a 	.word	0x2000162a
+ 80058f0:	200017ee 	.word	0x200017ee
+ 80058f4:	200017e8 	.word	0x200017e8
+ 80058f8:	20001764 	.word	0x20001764
 
-08005900 <gpsSetPIDs>:
- 8005900:	4b3a      	ldr	r3, [pc, #232]	; (80059ec <gpsSetPIDs+0xec>)
- 8005902:	eddf 7a3b 	vldr	s15, [pc, #236]	; 80059f0 <gpsSetPIDs+0xf0>
- 8005906:	7959      	ldrb	r1, [r3, #5]
- 8005908:	4a3a      	ldr	r2, [pc, #232]	; (80059f4 <gpsSetPIDs+0xf4>)
- 800590a:	7998      	ldrb	r0, [r3, #6]
- 800590c:	ee07 1a10 	vmov	s14, r1
- 8005910:	eeb8 7a47 	vcvt.f32.u32	s14, s14
- 8005914:	7bd9      	ldrb	r1, [r3, #15]
- 8005916:	eec7 6a27 	vdiv.f32	s13, s14, s15
- 800591a:	ee07 1a10 	vmov	s14, r1
- 800591e:	eeb8 7a47 	vcvt.f32.u32	s14, s14
- 8005922:	edc2 6a00 	vstr	s13, [r2]
- 8005926:	eec7 6a27 	vdiv.f32	s13, s14, s15
- 800592a:	4933      	ldr	r1, [pc, #204]	; (80059f8 <gpsSetPIDs+0xf8>)
- 800592c:	60d1      	str	r1, [r2, #12]
- 800592e:	ee07 0a10 	vmov	s14, r0
- 8005932:	eeb8 7a47 	vcvt.f32.u32	s14, s14
- 8005936:	edc2 6a01 	vstr	s13, [r2, #4]
- 800593a:	eef2 6a04 	vmov.f32	s13, #36	; 0x41200000  10.0
- 800593e:	ee87 6a26 	vdiv.f32	s12, s14, s13
- 8005942:	7c18      	ldrb	r0, [r3, #16]
- 8005944:	4a2d      	ldr	r2, [pc, #180]	; (80059fc <gpsSetPIDs+0xfc>)
- 8005946:	60d1      	str	r1, [r2, #12]
- 8005948:	ee07 0a10 	vmov	s14, r0
- 800594c:	eeb8 7a47 	vcvt.f32.u32	s14, s14
- 8005950:	ed82 6a00 	vstr	s12, [r2]
- 8005954:	ee87 6a27 	vdiv.f32	s12, s14, s15
- 8005958:	7e98      	ldrb	r0, [r3, #26]
- 800595a:	ed9f 7a29 	vldr	s14, [pc, #164]	; 8005a00 <gpsSetPIDs+0x100>
- 800595e:	ed82 6a01 	vstr	s12, [r2, #4]
- 8005962:	ee06 0a10 	vmov	s12, r0
- 8005966:	eeb8 6a46 	vcvt.f32.u32	s12, s12
- 800596a:	79d8      	ldrb	r0, [r3, #7]
- 800596c:	eec6 5a07 	vdiv.f32	s11, s12, s14
- 8005970:	ee06 0a10 	vmov	s12, r0
- 8005974:	eeb8 6a46 	vcvt.f32.u32	s12, s12
- 8005978:	edc2 5a02 	vstr	s11, [r2, #8]
- 800597c:	eec6 5a26 	vdiv.f32	s11, s12, s13
- 8005980:	7c58      	ldrb	r0, [r3, #17]
- 8005982:	4a20      	ldr	r2, [pc, #128]	; (8005a04 <gpsSetPIDs+0x104>)
- 8005984:	60d1      	str	r1, [r2, #12]
- 8005986:	ee06 0a10 	vmov	s12, r0
- 800598a:	eeb8 6a46 	vcvt.f32.u32	s12, s12
- 800598e:	edc2 5a00 	vstr	s11, [r2]
- 8005992:	eec6 5a27 	vdiv.f32	s11, s12, s15
- 8005996:	7ed8      	ldrb	r0, [r3, #27]
- 8005998:	ee06 0a10 	vmov	s12, r0
- 800599c:	eeb8 6a46 	vcvt.f32.u32	s12, s12
- 80059a0:	edc2 5a01 	vstr	s11, [r2, #4]
- 80059a4:	eec6 5a07 	vdiv.f32	s11, s12, s14
- 80059a8:	edc2 5a02 	vstr	s11, [r2, #8]
- 80059ac:	4a16      	ldr	r2, [pc, #88]	; (8005a08 <gpsSetPIDs+0x108>)
- 80059ae:	7c12      	ldrb	r2, [r2, #16]
- 80059b0:	b1da      	cbz	r2, 80059ea <gpsSetPIDs+0xea>
- 80059b2:	7919      	ldrb	r1, [r3, #4]
- 80059b4:	4a15      	ldr	r2, [pc, #84]	; (8005a0c <gpsSetPIDs+0x10c>)
- 80059b6:	ee06 1a10 	vmov	s12, r1
- 80059ba:	7b99      	ldrb	r1, [r3, #14]
- 80059bc:	7e1b      	ldrb	r3, [r3, #24]
- 80059be:	eeb8 6a46 	vcvt.f32.u32	s12, s12
- 80059c2:	eec6 5a26 	vdiv.f32	s11, s12, s13
- 80059c6:	ee06 1a90 	vmov	s13, r1
- 80059ca:	eef8 6a66 	vcvt.f32.u32	s13, s13
- 80059ce:	edc2 5a00 	vstr	s11, [r2]
- 80059d2:	ee86 6aa7 	vdiv.f32	s12, s13, s15
- 80059d6:	ee07 3a90 	vmov	s15, r3
- 80059da:	eef8 7a67 	vcvt.f32.u32	s15, s15
- 80059de:	ed82 6a01 	vstr	s12, [r2, #4]
- 80059e2:	eec7 6a87 	vdiv.f32	s13, s15, s14
- 80059e6:	edc2 6a02 	vstr	s13, [r2, #8]
- 80059ea:	4770      	bx	lr
- 80059ec:	200007d0 	.word	0x200007d0
- 80059f0:	42c80000 	.word	0x42c80000
- 80059f4:	2000124c 	.word	0x2000124c
- 80059f8:	44fa0000 	.word	0x44fa0000
- 80059fc:	20001284 	.word	0x20001284
- 8005a00:	447a0000 	.word	0x447a0000
- 8005a04:	2000122c 	.word	0x2000122c
- 8005a08:	20001764 	.word	0x20001764
- 8005a0c:	20000ef4 	.word	0x20000ef4
+080058fc <gpsSetPIDs>:
+ 80058fc:	4b3a      	ldr	r3, [pc, #232]	; (80059e8 <gpsSetPIDs+0xec>)
+ 80058fe:	eddf 7a3b 	vldr	s15, [pc, #236]	; 80059ec <gpsSetPIDs+0xf0>
+ 8005902:	7959      	ldrb	r1, [r3, #5]
+ 8005904:	4a3a      	ldr	r2, [pc, #232]	; (80059f0 <gpsSetPIDs+0xf4>)
+ 8005906:	7998      	ldrb	r0, [r3, #6]
+ 8005908:	ee07 1a10 	vmov	s14, r1
+ 800590c:	eeb8 7a47 	vcvt.f32.u32	s14, s14
+ 8005910:	7bd9      	ldrb	r1, [r3, #15]
+ 8005912:	eec7 6a27 	vdiv.f32	s13, s14, s15
+ 8005916:	ee07 1a10 	vmov	s14, r1
+ 800591a:	eeb8 7a47 	vcvt.f32.u32	s14, s14
+ 800591e:	edc2 6a00 	vstr	s13, [r2]
+ 8005922:	eec7 6a27 	vdiv.f32	s13, s14, s15
+ 8005926:	4933      	ldr	r1, [pc, #204]	; (80059f4 <gpsSetPIDs+0xf8>)
+ 8005928:	60d1      	str	r1, [r2, #12]
+ 800592a:	ee07 0a10 	vmov	s14, r0
+ 800592e:	eeb8 7a47 	vcvt.f32.u32	s14, s14
+ 8005932:	edc2 6a01 	vstr	s13, [r2, #4]
+ 8005936:	eef2 6a04 	vmov.f32	s13, #36	; 0x41200000  10.0
+ 800593a:	ee87 6a26 	vdiv.f32	s12, s14, s13
+ 800593e:	7c18      	ldrb	r0, [r3, #16]
+ 8005940:	4a2d      	ldr	r2, [pc, #180]	; (80059f8 <gpsSetPIDs+0xfc>)
+ 8005942:	60d1      	str	r1, [r2, #12]
+ 8005944:	ee07 0a10 	vmov	s14, r0
+ 8005948:	eeb8 7a47 	vcvt.f32.u32	s14, s14
+ 800594c:	ed82 6a00 	vstr	s12, [r2]
+ 8005950:	ee87 6a27 	vdiv.f32	s12, s14, s15
+ 8005954:	7e98      	ldrb	r0, [r3, #26]
+ 8005956:	ed9f 7a29 	vldr	s14, [pc, #164]	; 80059fc <gpsSetPIDs+0x100>
+ 800595a:	ed82 6a01 	vstr	s12, [r2, #4]
+ 800595e:	ee06 0a10 	vmov	s12, r0
+ 8005962:	eeb8 6a46 	vcvt.f32.u32	s12, s12
+ 8005966:	79d8      	ldrb	r0, [r3, #7]
+ 8005968:	eec6 5a07 	vdiv.f32	s11, s12, s14
+ 800596c:	ee06 0a10 	vmov	s12, r0
+ 8005970:	eeb8 6a46 	vcvt.f32.u32	s12, s12
+ 8005974:	edc2 5a02 	vstr	s11, [r2, #8]
+ 8005978:	eec6 5a26 	vdiv.f32	s11, s12, s13
+ 800597c:	7c58      	ldrb	r0, [r3, #17]
+ 800597e:	4a20      	ldr	r2, [pc, #128]	; (8005a00 <gpsSetPIDs+0x104>)
+ 8005980:	60d1      	str	r1, [r2, #12]
+ 8005982:	ee06 0a10 	vmov	s12, r0
+ 8005986:	eeb8 6a46 	vcvt.f32.u32	s12, s12
+ 800598a:	edc2 5a00 	vstr	s11, [r2]
+ 800598e:	eec6 5a27 	vdiv.f32	s11, s12, s15
+ 8005992:	7ed8      	ldrb	r0, [r3, #27]
+ 8005994:	ee06 0a10 	vmov	s12, r0
+ 8005998:	eeb8 6a46 	vcvt.f32.u32	s12, s12
+ 800599c:	edc2 5a01 	vstr	s11, [r2, #4]
+ 80059a0:	eec6 5a07 	vdiv.f32	s11, s12, s14
+ 80059a4:	edc2 5a02 	vstr	s11, [r2, #8]
+ 80059a8:	4a16      	ldr	r2, [pc, #88]	; (8005a04 <gpsSetPIDs+0x108>)
+ 80059aa:	7c12      	ldrb	r2, [r2, #16]
+ 80059ac:	b1da      	cbz	r2, 80059e6 <gpsSetPIDs+0xea>
+ 80059ae:	7919      	ldrb	r1, [r3, #4]
+ 80059b0:	4a15      	ldr	r2, [pc, #84]	; (8005a08 <gpsSetPIDs+0x10c>)
+ 80059b2:	ee06 1a10 	vmov	s12, r1
+ 80059b6:	7b99      	ldrb	r1, [r3, #14]
+ 80059b8:	7e1b      	ldrb	r3, [r3, #24]
+ 80059ba:	eeb8 6a46 	vcvt.f32.u32	s12, s12
+ 80059be:	eec6 5a26 	vdiv.f32	s11, s12, s13
+ 80059c2:	ee06 1a90 	vmov	s13, r1
+ 80059c6:	eef8 6a66 	vcvt.f32.u32	s13, s13
+ 80059ca:	edc2 5a00 	vstr	s11, [r2]
+ 80059ce:	ee86 6aa7 	vdiv.f32	s12, s13, s15
+ 80059d2:	ee07 3a90 	vmov	s15, r3
+ 80059d6:	eef8 7a67 	vcvt.f32.u32	s15, s15
+ 80059da:	ed82 6a01 	vstr	s12, [r2, #4]
+ 80059de:	eec7 6a87 	vdiv.f32	s13, s15, s14
+ 80059e2:	edc2 6a02 	vstr	s13, [r2, #8]
+ 80059e6:	4770      	bx	lr
+ 80059e8:	200007d0 	.word	0x200007d0
+ 80059ec:	42c80000 	.word	0x42c80000
+ 80059f0:	2000124c 	.word	0x2000124c
+ 80059f4:	44fa0000 	.word	0x44fa0000
+ 80059f8:	20001284 	.word	0x20001284
+ 80059fc:	447a0000 	.word	0x447a0000
+ 8005a00:	2000122c 	.word	0x2000122c
+ 8005a04:	20001764 	.word	0x20001764
+ 8005a08:	20000ef4 	.word	0x20000ef4
 
-08005a10 <gpsInit>:
- 8005a10:	b570      	push	{r4, r5, r6, lr}
- 8005a12:	4605      	mov	r5, r0
- 8005a14:	2000      	movs	r0, #0
- 8005a16:	460c      	mov	r4, r1
- 8005a18:	f7ff fbfe 	bl	8005218 <gpsSetState>
- 8005a1c:	4a17      	ldr	r2, [pc, #92]	; (8005a7c <gpsInit+0x6c>)
- 8005a1e:	4b18      	ldr	r3, [pc, #96]	; (8005a80 <gpsInit+0x70>)
- 8005a20:	6812      	ldr	r2, [r2, #0]
- 8005a22:	705c      	strb	r4, [r3, #1]
- 8005a24:	609a      	str	r2, [r3, #8]
- 8005a26:	6058      	str	r0, [r3, #4]
- 8005a28:	4604      	mov	r4, r0
- 8005a2a:	f7ff ff69 	bl	8005900 <gpsSetPIDs>
- 8005a2e:	230a      	movs	r3, #10
- 8005a30:	2203      	movs	r2, #3
- 8005a32:	f44f 5116 	mov.w	r1, #9600	; 0x2580
- 8005a36:	4628      	mov	r0, r5
- 8005a38:	f7fc f910 	bl	8001c5c <uartOpen>
- 8005a3c:	4e11      	ldr	r6, [pc, #68]	; (8005a84 <gpsInit+0x74>)
- 8005a3e:	60b0      	str	r0, [r6, #8]
- 8005a40:	b1b8      	cbz	r0, 8005a72 <gpsInit+0x62>
- 8005a42:	4d11      	ldr	r5, [pc, #68]	; (8005a88 <gpsInit+0x78>)
- 8005a44:	4621      	mov	r1, r4
- 8005a46:	4628      	mov	r0, r5
- 8005a48:	f008 fb24 	bl	800e094 <pifGpsUblox_Init>
- 8005a4c:	b188      	cbz	r0, 8005a72 <gpsInit+0x62>
- 8005a4e:	68b1      	ldr	r1, [r6, #8]
- 8005a50:	4628      	mov	r0, r5
- 8005a52:	3104      	adds	r1, #4
- 8005a54:	f008 fb4a 	bl	800e0ec <pifGpsUblox_AttachComm>
- 8005a58:	4b0c      	ldr	r3, [pc, #48]	; (8005a8c <gpsInit+0x7c>)
- 8005a5a:	60eb      	str	r3, [r5, #12]
- 8005a5c:	2001      	movs	r0, #1
- 8005a5e:	f7ff fbdb 	bl	8005218 <gpsSetState>
- 8005a62:	4b0b      	ldr	r3, [pc, #44]	; (8005a90 <gpsInit+0x80>)
- 8005a64:	f993 21ad 	ldrsb.w	r2, [r3, #429]	; 0x1ad
- 8005a68:	2a04      	cmp	r2, #4
- 8005a6a:	dd01      	ble.n	8005a70 <gpsInit+0x60>
- 8005a6c:	f883 41ad 	strb.w	r4, [r3, #429]	; 0x1ad
- 8005a70:	bd70      	pop	{r4, r5, r6, pc}
- 8005a72:	e8bd 4070 	ldmia.w	sp!, {r4, r5, r6, lr}
- 8005a76:	2020      	movs	r0, #32
- 8005a78:	f7ff b814 	b.w	8004aa4 <sensorsClear>
- 8005a7c:	20001cbc 	.word	0x20001cbc
- 8005a80:	20000f10 	.word	0x20000f10
- 8005a84:	20000440 	.word	0x20000440
- 8005a88:	20000f38 	.word	0x20000f38
- 8005a8c:	08005ba1 	.word	0x08005ba1
- 8005a90:	2000090c 	.word	0x2000090c
+08005a0c <gpsInit>:
+ 8005a0c:	b570      	push	{r4, r5, r6, lr}
+ 8005a0e:	4605      	mov	r5, r0
+ 8005a10:	2000      	movs	r0, #0
+ 8005a12:	460c      	mov	r4, r1
+ 8005a14:	f7ff fc00 	bl	8005218 <gpsSetState>
+ 8005a18:	4a17      	ldr	r2, [pc, #92]	; (8005a78 <gpsInit+0x6c>)
+ 8005a1a:	4b18      	ldr	r3, [pc, #96]	; (8005a7c <gpsInit+0x70>)
+ 8005a1c:	6812      	ldr	r2, [r2, #0]
+ 8005a1e:	705c      	strb	r4, [r3, #1]
+ 8005a20:	609a      	str	r2, [r3, #8]
+ 8005a22:	6058      	str	r0, [r3, #4]
+ 8005a24:	4604      	mov	r4, r0
+ 8005a26:	f7ff ff69 	bl	80058fc <gpsSetPIDs>
+ 8005a2a:	230a      	movs	r3, #10
+ 8005a2c:	2203      	movs	r2, #3
+ 8005a2e:	f44f 5116 	mov.w	r1, #9600	; 0x2580
+ 8005a32:	4628      	mov	r0, r5
+ 8005a34:	f7fc f912 	bl	8001c5c <uartOpen>
+ 8005a38:	4e11      	ldr	r6, [pc, #68]	; (8005a80 <gpsInit+0x74>)
+ 8005a3a:	60b0      	str	r0, [r6, #8]
+ 8005a3c:	b1b8      	cbz	r0, 8005a6e <gpsInit+0x62>
+ 8005a3e:	4d11      	ldr	r5, [pc, #68]	; (8005a84 <gpsInit+0x78>)
+ 8005a40:	4621      	mov	r1, r4
+ 8005a42:	4628      	mov	r0, r5
+ 8005a44:	f008 fb26 	bl	800e094 <pifGpsUblox_Init>
+ 8005a48:	b188      	cbz	r0, 8005a6e <gpsInit+0x62>
+ 8005a4a:	68b1      	ldr	r1, [r6, #8]
+ 8005a4c:	4628      	mov	r0, r5
+ 8005a4e:	3104      	adds	r1, #4
+ 8005a50:	f008 fb4c 	bl	800e0ec <pifGpsUblox_AttachComm>
+ 8005a54:	4b0c      	ldr	r3, [pc, #48]	; (8005a88 <gpsInit+0x7c>)
+ 8005a56:	60eb      	str	r3, [r5, #12]
+ 8005a58:	2001      	movs	r0, #1
+ 8005a5a:	f7ff fbdd 	bl	8005218 <gpsSetState>
+ 8005a5e:	4b0b      	ldr	r3, [pc, #44]	; (8005a8c <gpsInit+0x80>)
+ 8005a60:	f993 21ad 	ldrsb.w	r2, [r3, #429]	; 0x1ad
+ 8005a64:	2a04      	cmp	r2, #4
+ 8005a66:	dd01      	ble.n	8005a6c <gpsInit+0x60>
+ 8005a68:	f883 41ad 	strb.w	r4, [r3, #429]	; 0x1ad
+ 8005a6c:	bd70      	pop	{r4, r5, r6, pc}
+ 8005a6e:	e8bd 4070 	ldmia.w	sp!, {r4, r5, r6, lr}
+ 8005a72:	2020      	movs	r0, #32
+ 8005a74:	f7ff b816 	b.w	8004aa4 <sensorsClear>
+ 8005a78:	20001cbc 	.word	0x20001cbc
+ 8005a7c:	20000f10 	.word	0x20000f10
+ 8005a80:	20000440 	.word	0x20000440
+ 8005a84:	20000f38 	.word	0x20000f38
+ 8005a88:	08005b9d 	.word	0x08005b9d
+ 8005a8c:	2000090c 	.word	0x2000090c
 
-08005a94 <gpsSetPassthrough>:
- 8005a94:	b508      	push	{r3, lr}
- 8005a96:	4b0e      	ldr	r3, [pc, #56]	; (8005ad0 <gpsSetPassthrough+0x3c>)
- 8005a98:	781b      	ldrb	r3, [r3, #0]
- 8005a9a:	2b05      	cmp	r3, #5
- 8005a9c:	d002      	beq.n	8005aa4 <gpsSetPassthrough+0x10>
- 8005a9e:	f04f 30ff 	mov.w	r0, #4294967295
- 8005aa2:	bd08      	pop	{r3, pc}
- 8005aa4:	2000      	movs	r0, #0
- 8005aa6:	f7fb ff79 	bl	800199c <actLed0State>
- 8005aaa:	2000      	movs	r0, #0
- 8005aac:	f7fb ff92 	bl	80019d4 <actLed1State>
- 8005ab0:	4b08      	ldr	r3, [pc, #32]	; (8005ad4 <gpsSetPassthrough+0x40>)
- 8005ab2:	f893 01ab 	ldrb.w	r0, [r3, #427]	; 0x1ab
- 8005ab6:	2800      	cmp	r0, #0
- 8005ab8:	d1f1      	bne.n	8005a9e <gpsSetPassthrough+0xa>
- 8005aba:	4b07      	ldr	r3, [pc, #28]	; (8005ad8 <gpsSetPassthrough+0x44>)
- 8005abc:	4a07      	ldr	r2, [pc, #28]	; (8005adc <gpsSetPassthrough+0x48>)
- 8005abe:	7819      	ldrb	r1, [r3, #0]
- 8005ac0:	b111      	cbz	r1, 8005ac8 <gpsSetPassthrough+0x34>
- 8005ac2:	6110      	str	r0, [r2, #16]
- 8005ac4:	7018      	strb	r0, [r3, #0]
- 8005ac6:	e7ec      	b.n	8005aa2 <gpsSetPassthrough+0xe>
- 8005ac8:	4905      	ldr	r1, [pc, #20]	; (8005ae0 <gpsSetPassthrough+0x4c>)
- 8005aca:	6111      	str	r1, [r2, #16]
- 8005acc:	2001      	movs	r0, #1
- 8005ace:	e7f9      	b.n	8005ac4 <gpsSetPassthrough+0x30>
- 8005ad0:	20000f10 	.word	0x20000f10
- 8005ad4:	2000090c 	.word	0x2000090c
- 8005ad8:	2000129c 	.word	0x2000129c
- 8005adc:	20000f38 	.word	0x20000f38
- 8005ae0:	08005475 	.word	0x08005475
+08005a90 <gpsSetPassthrough>:
+ 8005a90:	b508      	push	{r3, lr}
+ 8005a92:	4b0e      	ldr	r3, [pc, #56]	; (8005acc <gpsSetPassthrough+0x3c>)
+ 8005a94:	781b      	ldrb	r3, [r3, #0]
+ 8005a96:	2b05      	cmp	r3, #5
+ 8005a98:	d002      	beq.n	8005aa0 <gpsSetPassthrough+0x10>
+ 8005a9a:	f04f 30ff 	mov.w	r0, #4294967295
+ 8005a9e:	bd08      	pop	{r3, pc}
+ 8005aa0:	2000      	movs	r0, #0
+ 8005aa2:	f7fb ff7b 	bl	800199c <actLed0State>
+ 8005aa6:	2000      	movs	r0, #0
+ 8005aa8:	f7fb ff94 	bl	80019d4 <actLed1State>
+ 8005aac:	4b08      	ldr	r3, [pc, #32]	; (8005ad0 <gpsSetPassthrough+0x40>)
+ 8005aae:	f893 01ab 	ldrb.w	r0, [r3, #427]	; 0x1ab
+ 8005ab2:	2800      	cmp	r0, #0
+ 8005ab4:	d1f1      	bne.n	8005a9a <gpsSetPassthrough+0xa>
+ 8005ab6:	4b07      	ldr	r3, [pc, #28]	; (8005ad4 <gpsSetPassthrough+0x44>)
+ 8005ab8:	4a07      	ldr	r2, [pc, #28]	; (8005ad8 <gpsSetPassthrough+0x48>)
+ 8005aba:	7819      	ldrb	r1, [r3, #0]
+ 8005abc:	b111      	cbz	r1, 8005ac4 <gpsSetPassthrough+0x34>
+ 8005abe:	6110      	str	r0, [r2, #16]
+ 8005ac0:	7018      	strb	r0, [r3, #0]
+ 8005ac2:	e7ec      	b.n	8005a9e <gpsSetPassthrough+0xe>
+ 8005ac4:	4905      	ldr	r1, [pc, #20]	; (8005adc <gpsSetPassthrough+0x4c>)
+ 8005ac6:	6111      	str	r1, [r2, #16]
+ 8005ac8:	2001      	movs	r0, #1
+ 8005aca:	e7f9      	b.n	8005ac0 <gpsSetPassthrough+0x30>
+ 8005acc:	20000f10 	.word	0x20000f10
+ 8005ad0:	2000090c 	.word	0x2000090c
+ 8005ad4:	2000129c 	.word	0x2000129c
+ 8005ad8:	20000f38 	.word	0x20000f38
+ 8005adc:	0800546d 	.word	0x0800546d
 
-08005ae4 <GPS_set_next_wp>:
- 8005ae4:	b538      	push	{r3, r4, r5, lr}
- 8005ae6:	4c1a      	ldr	r4, [pc, #104]	; (8005b50 <GPS_set_next_wp+0x6c>)
- 8005ae8:	6803      	ldr	r3, [r0, #0]
- 8005aea:	6023      	str	r3, [r4, #0]
- 8005aec:	680b      	ldr	r3, [r1, #0]
- 8005aee:	6063      	str	r3, [r4, #4]
- 8005af0:	6800      	ldr	r0, [r0, #0]
- 8005af2:	f7ff fca5 	bl	8005440 <GPS_calc_longitude_scaling>
- 8005af6:	4b17      	ldr	r3, [pc, #92]	; (8005b54 <GPS_set_next_wp+0x70>)
- 8005af8:	7d1b      	ldrb	r3, [r3, #20]
- 8005afa:	b10b      	cbz	r3, 8005b00 <GPS_set_next_wp+0x1c>
- 8005afc:	f7ff f82a 	bl	8004b54 <fw_FlyTo>
- 8005b00:	4d15      	ldr	r5, [pc, #84]	; (8005b58 <GPS_set_next_wp+0x74>)
- 8005b02:	4a16      	ldr	r2, [pc, #88]	; (8005b5c <GPS_set_next_wp+0x78>)
- 8005b04:	e9d4 0100 	ldrd	r0, r1, [r4]
- 8005b08:	462b      	mov	r3, r5
- 8005b0a:	f7ff fcbd 	bl	8005488 <GPS_distance_cm_bearing.constprop.0.isra.0>
- 8005b0e:	4b14      	ldr	r3, [pc, #80]	; (8005b60 <GPS_set_next_wp+0x7c>)
- 8005b10:	4814      	ldr	r0, [pc, #80]	; (8005b64 <GPS_set_next_wp+0x80>)
- 8005b12:	682a      	ldr	r2, [r5, #0]
- 8005b14:	601a      	str	r2, [r3, #0]
- 8005b16:	6845      	ldr	r5, [r0, #4]
- 8005b18:	6863      	ldr	r3, [r4, #4]
- 8005b1a:	6800      	ldr	r0, [r0, #0]
- 8005b1c:	4912      	ldr	r1, [pc, #72]	; (8005b68 <GPS_set_next_wp+0x84>)
- 8005b1e:	1b5b      	subs	r3, r3, r5
- 8005b20:	ee07 3a90 	vmov	s15, r3
- 8005b24:	4b11      	ldr	r3, [pc, #68]	; (8005b6c <GPS_set_next_wp+0x88>)
- 8005b26:	ed93 7a00 	vldr	s14, [r3]
- 8005b2a:	6823      	ldr	r3, [r4, #0]
- 8005b2c:	1a1b      	subs	r3, r3, r0
- 8005b2e:	eef8 7ae7 	vcvt.f32.s32	s15, s15
- 8005b32:	600b      	str	r3, [r1, #0]
- 8005b34:	4b0e      	ldr	r3, [pc, #56]	; (8005b70 <GPS_set_next_wp+0x8c>)
- 8005b36:	ee67 7a87 	vmul.f32	s15, s15, s14
- 8005b3a:	601a      	str	r2, [r3, #0]
- 8005b3c:	4b0d      	ldr	r3, [pc, #52]	; (8005b74 <GPS_set_next_wp+0x90>)
- 8005b3e:	eefd 7ae7 	vcvt.s32.f32	s15, s15
- 8005b42:	f8b3 2118 	ldrh.w	r2, [r3, #280]	; 0x118
- 8005b46:	4b0c      	ldr	r3, [pc, #48]	; (8005b78 <GPS_set_next_wp+0x94>)
- 8005b48:	edc1 7a01 	vstr	s15, [r1, #4]
- 8005b4c:	801a      	strh	r2, [r3, #0]
- 8005b4e:	bd38      	pop	{r3, r4, r5, pc}
- 8005b50:	20000eb4 	.word	0x20000eb4
- 8005b54:	20001764 	.word	0x20001764
- 8005b58:	200012a0 	.word	0x200012a0
- 8005b5c:	200012a8 	.word	0x200012a8
- 8005b60:	2000123c 	.word	0x2000123c
- 8005b64:	20001630 	.word	0x20001630
- 8005b68:	20000f08 	.word	0x20000f08
- 8005b6c:	2000001c 	.word	0x2000001c
- 8005b70:	20001248 	.word	0x20001248
- 8005b74:	200007d0 	.word	0x200007d0
- 8005b78:	200012a4 	.word	0x200012a4
+08005ae0 <GPS_set_next_wp>:
+ 8005ae0:	b538      	push	{r3, r4, r5, lr}
+ 8005ae2:	4c1a      	ldr	r4, [pc, #104]	; (8005b4c <GPS_set_next_wp+0x6c>)
+ 8005ae4:	6803      	ldr	r3, [r0, #0]
+ 8005ae6:	6023      	str	r3, [r4, #0]
+ 8005ae8:	680b      	ldr	r3, [r1, #0]
+ 8005aea:	6063      	str	r3, [r4, #4]
+ 8005aec:	6800      	ldr	r0, [r0, #0]
+ 8005aee:	f7ff fca3 	bl	8005438 <GPS_calc_longitude_scaling>
+ 8005af2:	4b17      	ldr	r3, [pc, #92]	; (8005b50 <GPS_set_next_wp+0x70>)
+ 8005af4:	7d1b      	ldrb	r3, [r3, #20]
+ 8005af6:	b10b      	cbz	r3, 8005afc <GPS_set_next_wp+0x1c>
+ 8005af8:	f7ff f82c 	bl	8004b54 <fw_FlyTo>
+ 8005afc:	4d15      	ldr	r5, [pc, #84]	; (8005b54 <GPS_set_next_wp+0x74>)
+ 8005afe:	4a16      	ldr	r2, [pc, #88]	; (8005b58 <GPS_set_next_wp+0x78>)
+ 8005b00:	e9d4 0100 	ldrd	r0, r1, [r4]
+ 8005b04:	462b      	mov	r3, r5
+ 8005b06:	f7ff fcbb 	bl	8005480 <GPS_distance_cm_bearing.constprop.0.isra.0>
+ 8005b0a:	4b14      	ldr	r3, [pc, #80]	; (8005b5c <GPS_set_next_wp+0x7c>)
+ 8005b0c:	4814      	ldr	r0, [pc, #80]	; (8005b60 <GPS_set_next_wp+0x80>)
+ 8005b0e:	682a      	ldr	r2, [r5, #0]
+ 8005b10:	601a      	str	r2, [r3, #0]
+ 8005b12:	6845      	ldr	r5, [r0, #4]
+ 8005b14:	6863      	ldr	r3, [r4, #4]
+ 8005b16:	6800      	ldr	r0, [r0, #0]
+ 8005b18:	4912      	ldr	r1, [pc, #72]	; (8005b64 <GPS_set_next_wp+0x84>)
+ 8005b1a:	1b5b      	subs	r3, r3, r5
+ 8005b1c:	ee07 3a90 	vmov	s15, r3
+ 8005b20:	4b11      	ldr	r3, [pc, #68]	; (8005b68 <GPS_set_next_wp+0x88>)
+ 8005b22:	ed93 7a00 	vldr	s14, [r3]
+ 8005b26:	6823      	ldr	r3, [r4, #0]
+ 8005b28:	1a1b      	subs	r3, r3, r0
+ 8005b2a:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 8005b2e:	600b      	str	r3, [r1, #0]
+ 8005b30:	4b0e      	ldr	r3, [pc, #56]	; (8005b6c <GPS_set_next_wp+0x8c>)
+ 8005b32:	ee67 7a87 	vmul.f32	s15, s15, s14
+ 8005b36:	601a      	str	r2, [r3, #0]
+ 8005b38:	4b0d      	ldr	r3, [pc, #52]	; (8005b70 <GPS_set_next_wp+0x90>)
+ 8005b3a:	eefd 7ae7 	vcvt.s32.f32	s15, s15
+ 8005b3e:	f8b3 2118 	ldrh.w	r2, [r3, #280]	; 0x118
+ 8005b42:	4b0c      	ldr	r3, [pc, #48]	; (8005b74 <GPS_set_next_wp+0x94>)
+ 8005b44:	edc1 7a01 	vstr	s15, [r1, #4]
+ 8005b48:	801a      	strh	r2, [r3, #0]
+ 8005b4a:	bd38      	pop	{r3, r4, r5, pc}
+ 8005b4c:	20000eb4 	.word	0x20000eb4
+ 8005b50:	20001764 	.word	0x20001764
+ 8005b54:	200012a0 	.word	0x200012a0
+ 8005b58:	200012a8 	.word	0x200012a8
+ 8005b5c:	2000123c 	.word	0x2000123c
+ 8005b60:	20001630 	.word	0x20001630
+ 8005b64:	20000f08 	.word	0x20000f08
+ 8005b68:	2000001c 	.word	0x2000001c
+ 8005b6c:	20001248 	.word	0x20001248
+ 8005b70:	200007d0 	.word	0x200007d0
+ 8005b74:	200012a4 	.word	0x200012a4
 
-08005b7c <wrap_18000>:
- 8005b7c:	f244 6350 	movw	r3, #18000	; 0x4650
- 8005b80:	4298      	cmp	r0, r3
- 8005b82:	dd03      	ble.n	8005b8c <wrap_18000+0x10>
- 8005b84:	f5a0 400c 	sub.w	r0, r0, #35840	; 0x8c00
- 8005b88:	38a0      	subs	r0, #160	; 0xa0
- 8005b8a:	4770      	bx	lr
- 8005b8c:	4b03      	ldr	r3, [pc, #12]	; (8005b9c <wrap_18000+0x20>)
- 8005b8e:	4298      	cmp	r0, r3
- 8005b90:	bfbc      	itt	lt
- 8005b92:	f500 400c 	addlt.w	r0, r0, #35840	; 0x8c00
- 8005b96:	30a0      	addlt	r0, #160	; 0xa0
- 8005b98:	4770      	bx	lr
- 8005b9a:	bf00      	nop
- 8005b9c:	ffffb9b0 	.word	0xffffb9b0
+08005b78 <wrap_18000>:
+ 8005b78:	f244 6350 	movw	r3, #18000	; 0x4650
+ 8005b7c:	4298      	cmp	r0, r3
+ 8005b7e:	dd03      	ble.n	8005b88 <wrap_18000+0x10>
+ 8005b80:	f5a0 400c 	sub.w	r0, r0, #35840	; 0x8c00
+ 8005b84:	38a0      	subs	r0, #160	; 0xa0
+ 8005b86:	4770      	bx	lr
+ 8005b88:	4b03      	ldr	r3, [pc, #12]	; (8005b98 <wrap_18000+0x20>)
+ 8005b8a:	4298      	cmp	r0, r3
+ 8005b8c:	bfbc      	itt	lt
+ 8005b8e:	f500 400c 	addlt.w	r0, r0, #35840	; 0x8c00
+ 8005b92:	30a0      	addlt	r0, #160	; 0xa0
+ 8005b94:	4770      	bx	lr
+ 8005b96:	bf00      	nop
+ 8005b98:	ffffb9b0 	.word	0xffffb9b0
 
-08005ba0 <_evtGpsReceive>:
- 8005ba0:	b510      	push	{r4, lr}
- 8005ba2:	4c18      	ldr	r4, [pc, #96]	; (8005c04 <_evtGpsReceive+0x64>)
- 8005ba4:	7ae3      	ldrb	r3, [r4, #11]
- 8005ba6:	b173      	cbz	r3, 8005bc6 <_evtGpsReceive+0x26>
- 8005ba8:	2004      	movs	r0, #4
- 8005baa:	f7fe ff69 	bl	8004a80 <sensors>
- 8005bae:	b950      	cbnz	r0, 8005bc6 <_evtGpsReceive+0x26>
- 8005bb0:	7c23      	ldrb	r3, [r4, #16]
- 8005bb2:	b143      	cbz	r3, 8005bc6 <_evtGpsReceive+0x26>
- 8005bb4:	4b14      	ldr	r3, [pc, #80]	; (8005c08 <_evtGpsReceive+0x68>)
- 8005bb6:	4a15      	ldr	r2, [pc, #84]	; (8005c0c <_evtGpsReceive+0x6c>)
- 8005bb8:	881b      	ldrh	r3, [r3, #0]
- 8005bba:	6892      	ldr	r2, [r2, #8]
- 8005bbc:	1a9b      	subs	r3, r3, r2
- 8005bbe:	2264      	movs	r2, #100	; 0x64
- 8005bc0:	4353      	muls	r3, r2
- 8005bc2:	4a13      	ldr	r2, [pc, #76]	; (8005c10 <_evtGpsReceive+0x70>)
- 8005bc4:	6013      	str	r3, [r2, #0]
- 8005bc6:	2008      	movs	r0, #8
- 8005bc8:	f7fe ff5a 	bl	8004a80 <sensors>
- 8005bcc:	b988      	cbnz	r0, 8005bf2 <_evtGpsReceive+0x52>
- 8005bce:	4b11      	ldr	r3, [pc, #68]	; (8005c14 <_evtGpsReceive+0x74>)
- 8005bd0:	881b      	ldrh	r3, [r3, #0]
- 8005bd2:	2b64      	cmp	r3, #100	; 0x64
- 8005bd4:	d90d      	bls.n	8005bf2 <_evtGpsReceive+0x52>
- 8005bd6:	4910      	ldr	r1, [pc, #64]	; (8005c18 <_evtGpsReceive+0x78>)
- 8005bd8:	8808      	ldrh	r0, [r1, #0]
- 8005bda:	220a      	movs	r2, #10
- 8005bdc:	4350      	muls	r0, r2
- 8005bde:	f7ff ffcd 	bl	8005b7c <wrap_18000>
- 8005be2:	4b0e      	ldr	r3, [pc, #56]	; (8005c1c <_evtGpsReceive+0x7c>)
- 8005be4:	fb90 f0f2 	sdiv	r0, r0, r2
- 8005be8:	b280      	uxth	r0, r0
- 8005bea:	8008      	strh	r0, [r1, #0]
- 8005bec:	fbb0 f0f2 	udiv	r0, r0, r2
- 8005bf0:	8018      	strh	r0, [r3, #0]
- 8005bf2:	4b0b      	ldr	r3, [pc, #44]	; (8005c20 <_evtGpsReceive+0x80>)
- 8005bf4:	6818      	ldr	r0, [r3, #0]
- 8005bf6:	f006 fea3 	bl	800c940 <pifTask_SetTrigger>
- 8005bfa:	4b0a      	ldr	r3, [pc, #40]	; (8005c24 <_evtGpsReceive+0x84>)
- 8005bfc:	2201      	movs	r2, #1
- 8005bfe:	761a      	strb	r2, [r3, #24]
- 8005c00:	bd10      	pop	{r4, pc}
- 8005c02:	bf00      	nop
- 8005c04:	20001764 	.word	0x20001764
- 8005c08:	20001628 	.word	0x20001628
- 8005c0c:	2000164c 	.word	0x2000164c
- 8005c10:	20001368 	.word	0x20001368
- 8005c14:	2000165a 	.word	0x2000165a
- 8005c18:	2000163c 	.word	0x2000163c
- 8005c1c:	20001a58 	.word	0x20001a58
- 8005c20:	20001470 	.word	0x20001470
- 8005c24:	20000f10 	.word	0x20000f10
+08005b9c <_evtGpsReceive>:
+ 8005b9c:	b510      	push	{r4, lr}
+ 8005b9e:	4c18      	ldr	r4, [pc, #96]	; (8005c00 <_evtGpsReceive+0x64>)
+ 8005ba0:	7ae3      	ldrb	r3, [r4, #11]
+ 8005ba2:	b173      	cbz	r3, 8005bc2 <_evtGpsReceive+0x26>
+ 8005ba4:	2004      	movs	r0, #4
+ 8005ba6:	f7fe ff6b 	bl	8004a80 <sensors>
+ 8005baa:	b950      	cbnz	r0, 8005bc2 <_evtGpsReceive+0x26>
+ 8005bac:	7c23      	ldrb	r3, [r4, #16]
+ 8005bae:	b143      	cbz	r3, 8005bc2 <_evtGpsReceive+0x26>
+ 8005bb0:	4b14      	ldr	r3, [pc, #80]	; (8005c04 <_evtGpsReceive+0x68>)
+ 8005bb2:	4a15      	ldr	r2, [pc, #84]	; (8005c08 <_evtGpsReceive+0x6c>)
+ 8005bb4:	881b      	ldrh	r3, [r3, #0]
+ 8005bb6:	6892      	ldr	r2, [r2, #8]
+ 8005bb8:	1a9b      	subs	r3, r3, r2
+ 8005bba:	2264      	movs	r2, #100	; 0x64
+ 8005bbc:	4353      	muls	r3, r2
+ 8005bbe:	4a13      	ldr	r2, [pc, #76]	; (8005c0c <_evtGpsReceive+0x70>)
+ 8005bc0:	6013      	str	r3, [r2, #0]
+ 8005bc2:	2008      	movs	r0, #8
+ 8005bc4:	f7fe ff5c 	bl	8004a80 <sensors>
+ 8005bc8:	b988      	cbnz	r0, 8005bee <_evtGpsReceive+0x52>
+ 8005bca:	4b11      	ldr	r3, [pc, #68]	; (8005c10 <_evtGpsReceive+0x74>)
+ 8005bcc:	881b      	ldrh	r3, [r3, #0]
+ 8005bce:	2b64      	cmp	r3, #100	; 0x64
+ 8005bd0:	d90d      	bls.n	8005bee <_evtGpsReceive+0x52>
+ 8005bd2:	4910      	ldr	r1, [pc, #64]	; (8005c14 <_evtGpsReceive+0x78>)
+ 8005bd4:	8808      	ldrh	r0, [r1, #0]
+ 8005bd6:	220a      	movs	r2, #10
+ 8005bd8:	4350      	muls	r0, r2
+ 8005bda:	f7ff ffcd 	bl	8005b78 <wrap_18000>
+ 8005bde:	4b0e      	ldr	r3, [pc, #56]	; (8005c18 <_evtGpsReceive+0x7c>)
+ 8005be0:	fb90 f0f2 	sdiv	r0, r0, r2
+ 8005be4:	b280      	uxth	r0, r0
+ 8005be6:	8008      	strh	r0, [r1, #0]
+ 8005be8:	fbb0 f0f2 	udiv	r0, r0, r2
+ 8005bec:	8018      	strh	r0, [r3, #0]
+ 8005bee:	4b0b      	ldr	r3, [pc, #44]	; (8005c1c <_evtGpsReceive+0x80>)
+ 8005bf0:	6818      	ldr	r0, [r3, #0]
+ 8005bf2:	f006 fea5 	bl	800c940 <pifTask_SetTrigger>
+ 8005bf6:	4b0a      	ldr	r3, [pc, #40]	; (8005c20 <_evtGpsReceive+0x84>)
+ 8005bf8:	2201      	movs	r2, #1
+ 8005bfa:	761a      	strb	r2, [r3, #24]
+ 8005bfc:	bd10      	pop	{r4, pc}
+ 8005bfe:	bf00      	nop
+ 8005c00:	20001764 	.word	0x20001764
+ 8005c04:	20001628 	.word	0x20001628
+ 8005c08:	2000164c 	.word	0x2000164c
+ 8005c0c:	20001368 	.word	0x20001368
+ 8005c10:	2000165a 	.word	0x2000165a
+ 8005c14:	2000163c 	.word	0x2000163c
+ 8005c18:	20001a58 	.word	0x20001a58
+ 8005c1c:	20001470 	.word	0x20001470
+ 8005c20:	20000f10 	.word	0x20000f10
+ 8005c24:	00000000 	.word	0x00000000
 
 08005c28 <taskGpsNewData>:
  8005c28:	e92d 4ff0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, fp, lr}
@@ -8709,7 +8707,7 @@ Disassembly of section .text:
  8005d1e:	bf58      	it	pl
  8005d20:	eeb0 7a48 	vmovpl.f32	s14, s16
  8005d24:	ed87 7a00 	vstr	s14, [r7]
- 8005d28:	f7ff fbae 	bl	8005488 <GPS_distance_cm_bearing.constprop.0.isra.0>
+ 8005d28:	f7ff fbaa 	bl	8005480 <GPS_distance_cm_bearing.constprop.0.isra.0>
  8005d2c:	4998      	ldr	r1, [pc, #608]	; (8005f90 <taskGpsNewData+0x368>)
  8005d2e:	9a04      	ldr	r2, [sp, #16]
  8005d30:	9b05      	ldr	r3, [sp, #20]
@@ -8773,7 +8771,7 @@ Disassembly of section .text:
  8005df0:	4b6b      	ldr	r3, [pc, #428]	; (8005fa0 <taskGpsNewData+0x378>)
  8005df2:	4a6c      	ldr	r2, [pc, #432]	; (8005fa4 <taskGpsNewData+0x37c>)
  8005df4:	e9d8 0100 	ldrd	r0, r1, [r8]
- 8005df8:	f7ff fb46 	bl	8005488 <GPS_distance_cm_bearing.constprop.0.isra.0>
+ 8005df8:	f7ff fb42 	bl	8005480 <GPS_distance_cm_bearing.constprop.0.isra.0>
  8005dfc:	6869      	ldr	r1, [r5, #4]
  8005dfe:	f8d8 3004 	ldr.w	r3, [r8, #4]
  8005e02:	4a69      	ldr	r2, [pc, #420]	; (8005fa8 <taskGpsNewData+0x380>)
@@ -8825,7 +8823,7 @@ Disassembly of section .text:
  8005e86:	4e4e      	ldr	r6, [pc, #312]	; (8005fc0 <taskGpsNewData+0x398>)
  8005e88:	1a8a      	subs	r2, r1, r2
  8005e8a:	4610      	mov	r0, r2
- 8005e8c:	f7ff fe76 	bl	8005b7c <wrap_18000>
+ 8005e8c:	f7ff fe74 	bl	8005b78 <wrap_18000>
  8005e90:	2800      	cmp	r0, #0
  8005e92:	f340 828f 	ble.w	80063b4 <taskGpsNewData+0x78c>
  8005e96:	f241 1393 	movw	r3, #4499	; 0x1193
@@ -9062,7 +9060,7 @@ Disassembly of section .text:
  800618c:	4b97      	ldr	r3, [pc, #604]	; (80063ec <taskGpsNewData+0x7c4>)
  800618e:	681b      	ldr	r3, [r3, #0]
  8006190:	1ac0      	subs	r0, r0, r3
- 8006192:	f7ff fcf3 	bl	8005b7c <wrap_18000>
+ 8006192:	f7ff fcf1 	bl	8005b78 <wrap_18000>
  8006196:	2800      	cmp	r0, #0
  8006198:	bfb8      	it	lt
  800619a:	4240      	neglt	r0, r0
@@ -9082,7 +9080,7 @@ Disassembly of section .text:
  80061b8:	f47f ad58 	bne.w	8005c6c <taskGpsNewData+0x44>
  80061bc:	2a00      	cmp	r2, #0
  80061be:	f43f ad55 	beq.w	8005c6c <taskGpsNewData+0x44>
- 80061c2:	f7ff fb47 	bl	8005854 <GPS_reset_home_position>
+ 80061c2:	f7ff fb45 	bl	8005850 <GPS_reset_home_position>
  80061c6:	e551      	b.n	8005c6c <taskGpsNewData+0x44>
  80061c8:	f04f 0e01 	mov.w	lr, #1
  80061cc:	e567      	b.n	8005c9e <taskGpsNewData+0x76>
@@ -12619,7 +12617,7 @@ Disassembly of section .text:
  8008a04:	801a      	strh	r2, [r3, #0]
  8008a06:	f7fc f85b 	bl	8004ac0 <feature>
  8008a0a:	b108      	cbz	r0, 8008a10 <taskComputeRc+0x410>
- 8008a0c:	f7fc ff22 	bl	8005854 <GPS_reset_home_position>
+ 8008a0c:	f7fc ff20 	bl	8005850 <GPS_reset_home_position>
  8008a10:	2004      	movs	r0, #4
  8008a12:	f7fc f835 	bl	8004a80 <sensors>
  8008a16:	b110      	cbz	r0, 8008a1e <taskComputeRc+0x41e>
@@ -12816,7 +12814,7 @@ Disassembly of section .text:
  8008be6:	1f08      	subs	r0, r1, #4
  8008be8:	7013      	strb	r3, [r2, #0]
  8008bea:	f884 b007 	strb.w	fp, [r4, #7]
- 8008bee:	f7fc ff79 	bl	8005ae4 <GPS_set_next_wp>
+ 8008bee:	f7fc ff77 	bl	8005ae0 <GPS_set_next_wp>
  8008bf2:	2302      	movs	r3, #2
  8008bf4:	f88a 3000 	strb.w	r3, [sl]
  8008bf8:	4b6a      	ldr	r3, [pc, #424]	; (8008da4 <taskComputeRc+0x7a4>)
@@ -12946,7 +12944,7 @@ Disassembly of section .text:
  8008d30:	4658      	mov	r0, fp
  8008d32:	7222      	strb	r2, [r4, #8]
  8008d34:	9301      	str	r3, [sp, #4]
- 8008d36:	f7fc fed5 	bl	8005ae4 <GPS_set_next_wp>
+ 8008d36:	f7fc fed3 	bl	8005ae0 <GPS_set_next_wp>
  8008d3a:	2201      	movs	r2, #1
  8008d3c:	f88a 2000 	strb.w	r2, [sl]
  8008d40:	4a18      	ldr	r2, [pc, #96]	; (8008da4 <taskComputeRc+0x7a4>)
@@ -12963,7 +12961,7 @@ Disassembly of section .text:
  8008d5c:	f47f af52 	bne.w	8008c04 <taskComputeRc+0x604>
  8008d60:	2201      	movs	r2, #1
  8008d62:	701a      	strb	r2, [r3, #0]
- 8008d64:	f7fc fd9e 	bl	80058a4 <GPS_reset_nav>
+ 8008d64:	f7fc fd9c 	bl	80058a0 <GPS_reset_nav>
  8008d68:	f884 a013 	strb.w	sl, [r4, #19]
  8008d6c:	e74a      	b.n	8008c04 <taskComputeRc+0x604>
  8008d6e:	2300      	movs	r3, #0
@@ -13012,7 +13010,7 @@ Disassembly of section .text:
  8008de6:	6023      	str	r3, [r4, #0]
  8008de8:	f7fb fe6a 	bl	8004ac0 <feature>
  8008dec:	b110      	cbz	r0, 8008df4 <taskLoop+0x24>
- 8008dee:	f7fc fb93 	bl	8005518 <gpsThread>
+ 8008dee:	f7fc fb8f 	bl	8005510 <gpsThread>
  8008df2:	e7f3      	b.n	8008ddc <taskLoop+0xc>
  8008df4:	2300      	movs	r3, #0
  8008df6:	f44f 5000 	mov.w	r0, #8192	; 0x2000
@@ -13181,7 +13179,7 @@ Disassembly of section .text:
  8008fc4:	f8df 814c 	ldr.w	r8, [pc, #332]	; 8009114 <taskComputeImu+0x30c>
  8008fc8:	f9b8 3002 	ldrsh.w	r3, [r8, #2]
  8008fcc:	1ac0      	subs	r0, r0, r3
- 8008fce:	f7fc fdd5 	bl	8005b7c <wrap_18000>
+ 8008fce:	f7fc fdd3 	bl	8005b78 <wrap_18000>
  8008fd2:	f896 2115 	ldrb.w	r2, [r6, #277]	; 0x115
  8008fd6:	4251      	negs	r1, r2
  8008fd8:	f7f9 fe54 	bl	8002c84 <constrain>
@@ -13191,7 +13189,7 @@ Disassembly of section .text:
  8008fe6:	f9b8 3000 	ldrsh.w	r3, [r8]
  8008fea:	f9b9 0000 	ldrsh.w	r0, [r9]
  8008fee:	1ac0      	subs	r0, r0, r3
- 8008ff0:	f7fc fdc4 	bl	8005b7c <wrap_18000>
+ 8008ff0:	f7fc fdc2 	bl	8005b78 <wrap_18000>
  8008ff4:	f896 2115 	ldrb.w	r2, [r6, #277]	; 0x115
  8008ff8:	4251      	negs	r1, r2
  8008ffa:	f7f9 fe43 	bl	8002c84 <constrain>
@@ -15330,7 +15328,7 @@ Disassembly of section .text:
  800a7e8:	2202      	movs	r2, #2
  800a7ea:	1f08      	subs	r0, r1, #4
  800a7ec:	701a      	strb	r2, [r3, #0]
- 800a7ee:	f7fb f979 	bl	8005ae4 <GPS_set_next_wp>
+ 800a7ee:	f7fb f977 	bl	8005ae0 <GPS_set_next_wp>
  800a7f2:	f7ff bb35 	b.w	8009e60 <evtMspReceive+0x328>
  800a7f6:	4b8d      	ldr	r3, [pc, #564]	; (800aa2c <evtMspReceive+0xef4>)
  800a7f8:	785b      	ldrb	r3, [r3, #1]
@@ -15421,7 +15419,7 @@ Disassembly of section .text:
  800a8d8:	7833      	ldrb	r3, [r6, #0]
  800a8da:	42ab      	cmp	r3, r5
  800a8dc:	d803      	bhi.n	800a8e6 <evtMspReceive+0xdae>
- 800a8de:	f7fa ff75 	bl	80057cc <gpsPollSvinfo>
+ 800a8de:	f7fa ff73 	bl	80057c8 <gpsPollSvinfo>
  800a8e2:	f7ff babd 	b.w	8009e60 <evtMspReceive+0x328>
  800a8e6:	f817 1b01 	ldrb.w	r1, [r7], #1
  800a8ea:	4620      	mov	r0, r4
