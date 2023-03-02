@@ -42,9 +42,6 @@ static void _evtHcSr04Distance(int32_t distance)
 
     if (temp != pretemp) {
         pifHcSr04_SetTemperature(&s_hcsr04, temp);
-#ifdef __PIF_DEBUG__
-        pifLog_Printf(LT_INFO, "Temp=%f", temp);
-#endif
         pretemp = temp;
     }
 }

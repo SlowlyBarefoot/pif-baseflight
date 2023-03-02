@@ -346,7 +346,7 @@ int main(void)
     calibratingB = CALIBRATING_BARO_CYCLES;             // 10 seconds init_delay + 200 * 25 ms = 15 seconds before ground pressure settles
     f.SMALL_ANGLE = 1;
 
-    p_task = pifTaskManager_Add(TM_PERIOD_MS, 1, taskLoop, NULL, TRUE);         								// 1ms
+    p_task = pifTaskManager_Add(TM_PERIOD_MS, 10, taskLoop, NULL, TRUE);         								// 1ms
     if (!p_task) FAIL;
     p_task->name = "Loop";
 

@@ -23,7 +23,7 @@ extern void fw_nav_reset(void);
 #define GPS_TIMEOUT (2500)
 // How many entries in gpsInitData array below
 #define GPS_INIT_ENTRIES (GPS_BAUD_MAX + 1)
-#define GPS_BAUD_DELAY (200)
+#define GPS_BAUD_DELAY (500)
 
 typedef struct gpsInitData_t {
     uint8_t index;
@@ -40,14 +40,17 @@ static const gpsInitData_t gpsInitData[] = {
     { GPS_BAUD_9600,     9600 }
 };
 
-const uint8_t kCfgMsg[][3] = {
+const uint8_t kCfgMsgNmea[][3] = {
         { GUCI_NMEA_STD, GUMI_NMEA_VTG, 0x00 }, // Course over ground and Ground speed
         { GUCI_NMEA_STD, GUMI_NMEA_GSV, 0x00 }, // GNSS Satellites in View
         { GUCI_NMEA_STD, GUMI_NMEA_GLL, 0x00 }, // Latitude and longitude, with time of position fix and status
         { GUCI_NMEA_STD, GUMI_NMEA_GGA, 0x00 }, // Global positioning system fix data
         { GUCI_NMEA_STD, GUMI_NMEA_GSA, 0x00 }, // GNSS DOP and Active Satellites
         { GUCI_NMEA_STD, GUMI_NMEA_RMC, 0x00 }, // Recommended Minimum data
+};
+const uint8_t kCfgMsgNmeaSize = sizeof(kCfgMsgNmea) / sizeof(kCfgMsgNmea[0]);
 
+const uint8_t kCfgMsgNav[][3] = {
         { GUCI_NAV, GUMI_NAV_POSLLH, 0x01 },    // set POSLLH MSG rate
         { GUCI_NAV, GUMI_NAV_STATUS, 0x01 },    // set STATUS MSG rate
         { GUCI_NAV, GUMI_NAV_SOL, 0x01 },       // set SOL MSG rate
@@ -55,6 +58,7 @@ const uint8_t kCfgMsg[][3] = {
         { GUCI_NAV, GUMI_NAV_SVINFO, 0x05 },    // set SVINFO MSG rate (evey 5 cycles - low bandwidth)
         { GUCI_NAV, GUMI_NAV_VELNED, 0x01 }     // set VELNED MSG rate
 };
+const uint8_t kCfgMsgNavSize = sizeof(kCfgMsgNav) / sizeof(kCfgMsgNav[0]);
 
 const uint8_t kCfgRate[] = {
         0xC8, 0x00,				// messRate 5Hz
@@ -134,6 +138,7 @@ typedef struct gpsData_t {
 
 static gpsData_t gpsData;
 static PifGpsUblox gps_ublox;
+static uint8_t gps_receive = 0;
 
 
 static void gpsSetState(uint8_t state)
@@ -145,34 +150,91 @@ static void gpsSetState(uint8_t state)
     gpsData.receive = FALSE;
 }
 
-static void _evtGpsUbloxCfgResult(PifGpsUblox* p_owner, BOOL result)
+static BOOL _evtGpsNmeaReceive(PifGps *p_owner, PifGpsNmeaMsgId msg_id)
 {
-	(void)p_owner;
+	switch (msg_id) {
+	case PIF_GPS_NMEA_MSG_ID_GGA:
+	    f.GPS_FIX = p_owner->_fix;
+	    if (f.GPS_FIX) {
+	        GPS_coord[LAT] = p_owner->_coord_deg[PIF_GPS_LAT] * 10000000UL;
+	        GPS_coord[LON] = p_owner->_coord_deg[PIF_GPS_LON] * 10000000UL;
+	        GPS_numSat = p_owner->_num_sat;
+	        GPS_altitude = p_owner->_altitude;
+	    }
+	    gps_receive |= 1;
+		break;
 
-	gpsData.cfg_result = result ? GUCR_ACK : GUCR_NAK;
+	case PIF_GPS_NMEA_MSG_ID_RMC:
+	    GPS_speed = (uint16_t)(p_owner->_ground_speed / 10);
+	    GPS_ground_course = (uint16_t)(p_owner->_ground_course * 10);
+	    gps_receive |= 2;
+		break;
+	}
+	if (gps_receive != 3) return FALSE;
+
+	gps_receive = 0;
+	return TRUE;
+}
+
+static BOOL _evtGpsUbxReceive(PifGpsUblox* p_owner, PifGpsUbxPacket* p_packet)
+{
+	PifGps* p_parent = &p_owner->_gps;
+
+    switch (p_packet->class_id) {
+	case GUCI_ACK:
+		switch (p_packet->msg_id) {
+		case GUMI_ACK_ACK:
+			gpsData.cfg_result = GUCR_ACK;
+			return FALSE;
+
+		case GUMI_ACK_NAK:
+			gpsData.cfg_result = GUCR_NAK;
+			return FALSE;
+		}
+		break;
+
+    case GUCI_NAV:
+		switch (p_packet->msg_id) {
+			case GUMI_NAV_POSLLH:
+				f.GPS_FIX = p_parent->_fix;
+				if (f.GPS_FIX) {
+					GPS_coord[LAT] = p_parent->_coord_deg[PIF_GPS_LAT] * 10000000UL;
+					GPS_coord[LON] = p_parent->_coord_deg[PIF_GPS_LON] * 10000000UL;
+					GPS_numSat = p_parent->_num_sat;
+					GPS_altitude = p_parent->_altitude;
+				}
+				GPS_HorizontalAcc = p_parent->_horizontal_acc;
+				GPS_VerticalAcc = p_parent->_vertical_acc;
+				gps_receive |= 1;
+				break;
+
+			case GUMI_NAV_VELNED:
+				GPS_speed = (uint16_t)(p_parent->_ground_speed / 10);
+				GPS_ground_course = (uint16_t)(p_parent->_ground_course * 10);
+				gps_receive |= 2;
+				break;
+		}
+		break;
+    }
+	if (gps_receive != 3) return FALSE;
+
+	gps_receive = 0;
+	return TRUE;
 }
 
 static void _evtGpsReceive(PifGps *p_owner)
 {
-    f.GPS_FIX = p_owner->_fix;
+	(void)p_owner;
+
     if (f.GPS_FIX) {
-        GPS_coord[LAT] = p_owner->_coord_deg[PIF_GPS_LAT] * 10000000UL;
-        GPS_coord[LON] = p_owner->_coord_deg[PIF_GPS_LON] * 10000000UL;
-        GPS_numSat = p_owner->_num_sat;
-        GPS_altitude = p_owner->_altitude;
         if (!sensors(SENSOR_BARO) && f.FIXED_WING)
             EstAlt = (GPS_altitude - GPS_home[ALT]) * 100;    // Use values Based on GPS
     }
 
-    GPS_speed = (uint16_t)(p_owner->_ground_speed / 10);
-    GPS_ground_course = (uint16_t)(p_owner->_ground_course * 10);
     if (!sensors(SENSOR_MAG) && GPS_speed > 100) {
         GPS_ground_course = wrap_18000(GPS_ground_course * 10) / 10;
         heading = GPS_ground_course / 10;    // Use values Based on GPS if we are moving.
     }
-
-    GPS_HorizontalAcc = p_owner->_horizontal_acc;
-    GPS_VerticalAcc = p_owner->_vertical_acc;
 
     pifTask_SetTrigger(g_task_gps);
     gpsData.receive = TRUE;
@@ -183,9 +245,9 @@ static void _evtGpsTimeout(PifGps *p_owner)
     (void)p_owner;
 
     // remove GPS from capability
-    if (mcfg.gps_type != GPS_NMEA || gpsInitData[gpsData.baudrateIndex].baudrate != 9600) {
-        serialStopReceiveFunc(&core.gpsport->comm);
-    }
+    serialStopReceiveFunc(&core.gpsport->comm);
+    gps_ublox._gps.evt_nmea_receive = NULL;
+    gps_ublox.evt_ubx_receive = NULL;
     sensorsClear(SENSOR_GPS);
     gpsSetState(GPS_LOSTCOMMS);
 #ifndef __PIF_NO_LOG__
@@ -204,7 +266,7 @@ void gpsInit(uint8_t port, uint8_t baudrateIndex)
 
     gpsSetPIDs();
     // Open GPS UART, no callback - buffer will be read out in gpsThread()
-    core.gpsport = uartOpen(port, 9600, MODE_RXTX, 5);    // signal GPS "thread" to initialize when it gets to it, 5ms
+    core.gpsport = uartOpen(port, 9600, MODE_RXTX, 10);    // signal GPS "thread" to initialize when it gets to it, 5ms
     if (!core.gpsport) goto fail;
     if (!pifGpsUblox_Init(&gps_ublox, PIF_ID_AUTO)) goto fail;
     pifGpsUblox_AttachComm(&gps_ublox, &core.gpsport->comm);
@@ -225,46 +287,62 @@ fail:
 
 static void gpsInitNmea(void)
 {
-    gps_ublox._gps.evt_nmea_msg_id = PIF_GPS_NMEA_MSG_ID_GGA;
+    gps_ublox._gps.evt_nmea_receive = _evtGpsNmeaReceive;
     pifGps_SetTimeout(&gps_ublox._gps, &g_timer_1ms, GPS_TIMEOUT, _evtGpsTimeout);
     gpsSetState(GPS_RECEIVINGDATA);
 }
 
 static void gpsInitUblox(void)
 {
-	static uint8_t cfg_msg_size = 0;
     uint8_t i;
     int line = 0;
 
 	// GPS_CONFIGURATION, push some ublox config strings
-	if (gpsData.step >= 20) {
-		if (gpsData.cfg_result == GUCR_ACK) {
-	  		gpsData.step = (gpsData.step - 20) + 1;
-			if (gpsData.step == cfg_msg_size) gpsData.step = 15;
-			gpsData.state_ts = pif_cumulative_timer1ms;
-		}
-		else if (gpsData.cfg_result == GUCR_NAK) {
-			pif_error = E_RECEIVE_NACK;
-			line = __LINE__;
+	if (gpsData.step >= 50) {
+		if (gpsData.step < 70) {
+			if (pif_cumulative_timer1ms - gpsData.state_ts >= 50) {
+#ifdef __PIF_DEBUG__
+				pifLog_Printf(LT_INFO, "GPS(%u) S:%u T=%lu", __LINE__, gpsData.step, pif_cumulative_timer1ms - gpsData.state_ts);
+#endif
+		  		gpsData.step = (gpsData.step - 50) + 1;
+				if (gpsData.step == 10 + kCfgMsgNmeaSize) gpsData.step = 20;
+				gpsData.state_ts = pif_cumulative_timer1ms;
+			}
 		}
 		else {
-			if (pif_cumulative_timer1ms - gpsData.state_ts >= 200) {
-				pif_error = E_TIMEOUT;
+			if (gpsData.cfg_result == GUCR_ACK) {
+#ifdef __PIF_DEBUG__
+				pifLog_Printf(LT_INFO, "GPS(%u) ACK:%u T=%lu", __LINE__, gpsData.step, pif_cumulative_timer1ms - gpsData.state_ts);
+#endif
+		  		gpsData.step = (gpsData.step - 50) + 1;
+				if (gpsData.step == 20 + kCfgMsgNavSize) gpsData.step = 30;
+				gpsData.state_ts = pif_cumulative_timer1ms;
+			}
+			else if (gpsData.cfg_result == GUCR_NAK) {
+				pif_error = E_RECEIVE_NACK;
 				line = __LINE__;
+#ifdef __PIF_DEBUG__
+				pifLog_Printf(LT_INFO, "GPS(%u) NAK:%u T=%lu", line, gpsData.step, pif_cumulative_timer1ms - gpsData.state_ts);
+#endif
+			}
+			else {
+				if (pif_cumulative_timer1ms - gpsData.state_ts >= 500) {
+					pif_error = E_TIMEOUT;
+					line = __LINE__;
+				}
 			}
 		}
 	}
 	else {
-		if (cfg_msg_size == 0) {
-			cfg_msg_size = sizeof(kCfgMsg) / sizeof(kCfgMsg[0]);
-			gps_ublox.evt_ubx_cfg_result = _evtGpsUbloxCfgResult;
+		if (gpsData.step < 10) {
 			gpsData.state_ts = pif_cumulative_timer1ms;
+			gps_ublox.evt_ubx_receive = _evtGpsUbxReceive;
+			gpsData.step = 10;
 		}
-		if (pif_cumulative_timer1ms - gpsData.state_ts < 5) return;
-		if (gpsData.step < cfg_msg_size) {
-			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_MSG, sizeof(kCfgMsg[gpsData.step]), (uint8_t*)kCfgMsg[gpsData.step], FALSE)) {
+		else if (gpsData.step < 10 + kCfgMsgNmeaSize) {
+			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_MSG, sizeof(kCfgMsgNmea[gpsData.step - 10]), (uint8_t*)kCfgMsgNmea[gpsData.step - 10], FALSE)) {
                 gpsData.cfg_result = GUCR_NONE;
-				gpsData.step += 20;
+				gpsData.step += 50;
 				gpsData.state_ts = pif_cumulative_timer1ms;
 			}
 			else {
@@ -272,10 +350,21 @@ static void gpsInitUblox(void)
 				line = __LINE__;
 			}
 		}
-		else if (gpsData.step == 15) {
+		else if (gpsData.step < 20 + kCfgMsgNavSize) {
+			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_MSG, sizeof(kCfgMsgNav[gpsData.step - 20]), (uint8_t*)kCfgMsgNav[gpsData.step - 20], FALSE)) {
+                gpsData.cfg_result = GUCR_NONE;
+				gpsData.step += 50;
+				gpsData.state_ts = pif_cumulative_timer1ms;
+			}
+			else {
+				pif_error = E_TRANSFER_FAILED;
+				line = __LINE__;
+			}
+		}
+		else if (gpsData.step == 30) {
 			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_RATE, sizeof(kCfgRate), (uint8_t*)kCfgRate, FALSE)) {
                 gpsData.cfg_result = GUCR_NONE;
-				gpsData.step += 20;
+				gpsData.step += 50;
 				gpsData.state_ts = pif_cumulative_timer1ms;
 			}
 			else {
@@ -283,10 +372,10 @@ static void gpsInitUblox(void)
 				line = __LINE__;
 			}
 		}
-		else if (gpsData.step == 16) {
+		else if (gpsData.step == 31) {
 			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_NAV5, sizeof(kCfgNav5), (uint8_t*)kCfgNav5, FALSE)) {
                 gpsData.cfg_result = GUCR_NONE;
-				gpsData.step += 20;
+				gpsData.step += 50;
 				gpsData.state_ts = pif_cumulative_timer1ms;
 			}
 			else {
@@ -294,11 +383,11 @@ static void gpsInitUblox(void)
 				line = __LINE__;
 			}
 		}
-		else if (gpsData.step == 17) {
+		else if (gpsData.step == 32) {
 			i = mcfg.gps_ubx_sbas > SBAS_DISABLED ? mcfg.gps_ubx_sbas : SBAS_LAST;
 			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_SBAS, sizeof(kCfgSbas[i]), (uint8_t*)kCfgSbas[i], FALSE)) {
                 gpsData.cfg_result = GUCR_NONE;
-				gpsData.step += 20;
+				gpsData.step += 50;
 				gpsData.state_ts = pif_cumulative_timer1ms;
 			}
 			else {
@@ -306,11 +395,10 @@ static void gpsInitUblox(void)
 				line = __LINE__;
 			}
 		}
-		else if (gpsData.step == 18) {
+		else if (gpsData.step == 33) {
 			if (pif_cumulative_timer1ms - gpsData.state_ts < 10000) {
 				if (gpsData.receive) {
 					// ublox should be init'd, time to try receiving some junk
-					serialStartReceiveFunc(&core.gpsport->comm);
 					pifGps_SetTimeout(&gps_ublox._gps, &g_timer_1ms, GPS_TIMEOUT, _evtGpsTimeout);
 					gpsSetState(GPS_RECEIVINGDATA);
 				}
@@ -324,7 +412,7 @@ static void gpsInitUblox(void)
 
 	if (line) {
 #ifndef __PIF_NO_LOG__
-		pifLog_Printf(LT_ERROR, "GPS(%u) CS:%u S:%u E:%u", line, cfg_msg_size, gpsData.step, pif_error);
+		pifLog_Printf(LT_ERROR, "GPS(%u) S:%u E:%u", line, gpsData.step, pif_error);
 #endif
 		_evtGpsTimeout(&gps_ublox._gps);
 	}

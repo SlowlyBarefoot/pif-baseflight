@@ -378,7 +378,7 @@ int main(void)
     calibratingB = CALIBRATING_BARO_CYCLES;             // 10 seconds init_delay + 200 * 25 ms = 15 seconds before ground pressure settles
     f.SMALL_ANGLE = 1;
 
-    p_task = pifTaskManager_Add(TM_PERIOD_MS, 50, taskLoop, NULL, TRUE);                            // 50ms
+    p_task = pifTaskManager_Add(TM_PERIOD_MS, 10, taskLoop, NULL, TRUE);                            // 50ms
     if (!p_task) goto bootloader;
     p_task->name = "Loop";
 
