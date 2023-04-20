@@ -21,6 +21,7 @@
 #include "drv_mma845x.h"
 #include "drv_mpu.h"
 #include "drv_pwm.h"
+#include "drv_qmc5883.h"
 #include "drv_serial.h"
 #include "drv_softserial.h"
 #include "drv_spi.h"
@@ -82,6 +83,7 @@ static sensorDetect_t gyro_detect[] = {
 	static sensorDetect_t mag_detect[] = { 
         { (sensorDetectFuncPtr)hmc5883lDetect, NULL }, 
         { (sensorDetectFuncPtr)ak8975detect, NULL },
+        { (sensorDetectFuncPtr)qmc5883Detect, NULL },
         { NULL, NULL }
     };
 #else    

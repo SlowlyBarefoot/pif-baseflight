@@ -89,6 +89,7 @@ COMMON_SRC	 = buzzer.c \
 		   pif_bmp280.c \
 		   pif_hc_sr04.c \
 		   pif_hmc5883.c \
+		   pif_qmc5883.c \
 		   pif_imu_sensor.c \
 		   pif_mpu30x0.c \
 		   pif_mpu60x0.c \
@@ -115,6 +116,7 @@ NAZE_SRC	 = drv_adc.c \
 		   drv_bmp280.c \
 		   drv_hcsr04.c \
 		   drv_hmc5883l.c \
+		   drv_qmc5883.c \
 		   drv_ledring.c \
 		   drv_mma845x.c \
 		   drv_mpu.c \
