@@ -1,9 +1,6 @@
 #include "main.h"
 #include "drv_hcsr04.h"
 
-#ifdef __PIF_DEBUG__
-	#include "core/pif_log.h"
-#endif
 #include "sensor/pif_hc_sr04.h"
 
 #ifdef SONAR

@@ -290,37 +290,24 @@ static void gpsInitUblox(void)
 
 	// GPS_CONFIGURATION, push some ublox config strings
 	if (gpsData.step >= 50) {
-		if (gpsData.step < 70) {
-			if (pif_cumulative_timer1ms - gpsData.state_ts >= 50) {
-#ifdef __PIF_DEBUG__
-				pifLog_Printf(LT_INFO, "GPS(%u) S:%u T=%lu", __LINE__, gpsData.step, pif_cumulative_timer1ms - gpsData.state_ts);
+		if (gpsData.cfg_result == GUMI_ACK_ACK) {
+#ifndef __PIF_NO_LOG__
+			pifLog_Printf(LT_INFO, "GPS(%u) ACK:%u T=%lu", __LINE__, gpsData.step, pif_cumulative_timer1ms - gpsData.state_ts);
 #endif
-		  		gpsData.step = (gpsData.step - 50) + 1;
-				if (gpsData.step == 10 + kCfgMsgNmeaSize) gpsData.step = 20;
-				gpsData.state_ts = pif_cumulative_timer1ms;
-			}
+	  		gpsData.step = (gpsData.step - 50) + 1;
+			gpsData.state_ts = pif_cumulative_timer1ms;
+		}
+		else if (gpsData.cfg_result == GUMI_ACK_NAK) {
+			pif_error = E_RECEIVE_NACK;
+			line = __LINE__;
+#ifndef __PIF_NO_LOG__
+			pifLog_Printf(LT_INFO, "GPS(%u) NAK:%u T=%lu", line, gpsData.step, pif_cumulative_timer1ms - gpsData.state_ts);
+#endif
 		}
 		else {
-			if (gpsData.cfg_result == GUMI_ACK_ACK) {
-#ifdef __PIF_DEBUG__
-				pifLog_Printf(LT_INFO, "GPS(%u) ACK:%u T=%lu", __LINE__, gpsData.step, pif_cumulative_timer1ms - gpsData.state_ts);
-#endif
-		  		gpsData.step = (gpsData.step - 50) + 1;
-				if (gpsData.step == 20 + kCfgMsgNavSize) gpsData.step = 30;
-				gpsData.state_ts = pif_cumulative_timer1ms;
-			}
-			else if (gpsData.cfg_result == GUMI_ACK_NAK) {
-				pif_error = E_RECEIVE_NACK;
+			if (pif_cumulative_timer1ms - gpsData.state_ts >= 500) {
+				pif_error = E_TIMEOUT;
 				line = __LINE__;
-#ifdef __PIF_DEBUG__
-				pifLog_Printf(LT_INFO, "GPS(%u) NAK:%u T=%lu", line, gpsData.step, pif_cumulative_timer1ms - gpsData.state_ts);
-#endif
-			}
-			else {
-				if (pif_cumulative_timer1ms - gpsData.state_ts >= 500) {
-					pif_error = E_TIMEOUT;
-					line = __LINE__;
-				}
 			}
 		}
 	}
@@ -341,6 +328,9 @@ static void gpsInitUblox(void)
 				line = __LINE__;
 			}
 		}
+		else if (gpsData.step < 20) {
+			gpsData.step = 20;
+		}
 		else if (gpsData.step < 20 + kCfgMsgNavSize) {
 			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_MSG, sizeof(kCfgMsgNav[gpsData.step - 20]), (uint8_t*)kCfgMsgNav[gpsData.step - 20], FALSE)) {
                 gpsData.cfg_result = -1;
@@ -351,6 +341,9 @@ static void gpsInitUblox(void)
 				pif_error = E_TRANSFER_FAILED;
 				line = __LINE__;
 			}
+		}
+		else if (gpsData.step < 30) {
+			gpsData.step = 30;
 		}
 		else if (gpsData.step == 30) {
 			if (pifGpsUblox_SendUbxMsg(&gps_ublox, GUCI_CFG, GUMI_CFG_RATE, sizeof(kCfgRate), (uint8_t*)kCfgRate, FALSE)) {

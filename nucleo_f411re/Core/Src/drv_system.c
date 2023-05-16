@@ -51,7 +51,7 @@ void systemInit(void)
 
 void failureMode(uint8_t mode)
 {
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
     pifLog_SendAndExit();
 #endif
     actLed1State(OFF);

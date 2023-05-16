@@ -33,7 +33,7 @@
 #include "drv_system.h"
 #include "drv_uart.h"
 
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
 	#include "core/pif_log.h"
 #endif
 /* USER CODE END Includes */
@@ -106,7 +106,7 @@ static void featureDefault(void)
     featureSet(FEATURE_VBAT);
 }
 
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
 
 void actTaskSignal(BOOL state)
 {
@@ -125,7 +125,7 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
     uint8_t i;
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
     int line;
 	#define FAIL { line = __LINE__; goto fail; }
 #else
@@ -171,7 +171,7 @@ int main(void)
 
     if (!pifTaskManager_Init(20)) FAIL;
 
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
     pif_act_task_signal = actTaskSignal;
 
     logOpen();
@@ -179,7 +179,7 @@ int main(void)
 
     if (!pifTimerManager_Init(&g_timer_1ms, PIF_ID_AUTO, 1000, 3)) FAIL;		        // 1000us
 
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
     pifLog_Printf(LT_INFO, "Start Baseflight: %d\n", sizeof(master_t));
 #endif
 
@@ -219,7 +219,7 @@ int main(void)
 
     // drop out any sensors that don't seem to work, init all the others. halt if gyro is dead.
     sensorsOK = sensorsAutodetect(gyro_detect, acc_detect, baro_detect, mag_detect);
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
     pifLog_Printf(LT_INFO, "Sensor: %lxh(%d)", sensorsMask(), sensorsOK);
 #endif
 
@@ -243,10 +243,12 @@ int main(void)
     imuInit(); // Mag is initialized inside imuInit
     mixerInit(); // this will set core.useServo var depending on mixer type
 
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
     pifLog_Printf(LT_INFO, "Serial: %lu", mcfg.serial_baudrate);
-#endif
     serialInit(UART_PORT_1, mcfg.serial_baudrate, UART_PORT_NONE);
+#else
+    serialInit(UART_PORT_1, mcfg.serial_baudrate, feature(FEATURE_SERIALRX) ? UART_PORT_NONE : UART_PORT_2);
+#endif
 
     g_task_compute_rc = pifTaskManager_Add(TM_EXTERNAL_ORDER, 0, taskComputeRc, NULL, FALSE);
     if (!g_task_compute_rc) FAIL;
@@ -295,6 +297,7 @@ int main(void)
         rcData[i] = 1502;
     rcReadRawFunc = pwmReadRawRC;
 
+#ifdef __PIF_NO_LOG__
     if (feature(FEATURE_SERIALRX)) {
         switch (mcfg.serialrx_type) {
             case SERIALRX_SPEKTRUM1024:
@@ -317,6 +320,7 @@ int main(void)
                 break;
         }
     }
+#endif
 
     // Optional GPS - available in both PPM, PWM and serialRX input mode, in PWM input, reduces number of available channels by 2.
     // gpsInit will return if FEATURE_GPS is not enabled.
@@ -387,7 +391,7 @@ int main(void)
     if (!p_task) FAIL;
     p_task->name = "Loop";
 
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
 	pifLog_Printf(LT_INFO, "Task=%d Timer1ms=%d\n", pifTaskManager_Count(),
 			pifTimerManager_Count(&g_timer_1ms));
 #endif
@@ -405,7 +409,7 @@ int main(void)
   return 0;
 
 fail:
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
 	pifLog_Printf(LT_ERROR, "Error=%Xh Line=%u", pif_error, line);
 	pifLog_SendAndExit();
 #endif

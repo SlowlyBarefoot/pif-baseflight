@@ -18,9 +18,7 @@
 #include "core/pif_log.h"
 
 #include <DueFlashStorage.h>
-#ifdef USE_I2C_WIRE
-	#include <Wire.h>
-#endif
+#include <Wire.h>
 
 
 #define EFC_ACCESS_MODE_128 	0
@@ -56,7 +54,7 @@ static void featureDefault(void)
     featureSet(FEATURE_VBAT);
 }
 
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
 
 void actTaskSignal(BOOL state)
 {
@@ -78,7 +76,7 @@ extern "C" {
 void setup()
 {
     uint8_t i;
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
     int line;
 	#define FAIL { line = __LINE__; goto fail; }
 #else
@@ -101,18 +99,14 @@ void setup()
 	Serial.begin(115200);
 #endif
 
-#ifdef USE_I2C_WIRE
 	Wire.begin();
 	Wire.setClock(400000);
-#else
-	I2C_Init(I2C_CLOCK_400KHz);
-#endif
 
     pif_Init(micros);
 
     if (!pifTaskManager_Init(20)) FAIL;
 
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
     pif_act_task_signal = actTaskSignal;
 
     logOpen();
@@ -120,7 +114,7 @@ void setup()
 
     if (!pifTimerManager_Init(&g_timer_1ms, PIF_ID_AUTO, 1000, 3)) FAIL;		        // 1000us
 
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
     pifLog_Printf(LT_INFO, "Start Baseflight: %d\n", sizeof(master_t));
 #endif
 
@@ -162,7 +156,7 @@ void setup()
 
     // drop out any sensors that don't seem to work, init all the others. halt if gyro is dead.
     sensorsOK = sensorsAutodetect(gyro_detect, acc_detect, baro_detect, mag_detect);
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
     pifLog_Printf(LT_INFO, "Sensor: %lxh(%d)", sensorsMask(), sensorsOK);
 #endif
 
@@ -186,7 +180,11 @@ void setup()
     imuInit(); // Mag is initialized inside imuInit
     mixerInit(); // this will set core.useServo var depending on mixer type
 
+#ifndef __PIF_NO_LOG__
     serialInit(UART_PORT_1, mcfg.serial_baudrate, UART_PORT_NONE);
+#else
+    serialInit(UART_PORT_1, mcfg.serial_baudrate,  UART_PORT_4);
+#endif
 
     g_task_compute_rc = pifTaskManager_Add(TM_EXTERNAL_ORDER, 0, taskComputeRc, NULL, FALSE);
     if (!g_task_compute_rc) FAIL;
@@ -328,7 +326,7 @@ void setup()
 	return;
 
 fail:
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
 	pifLog_Printf(LT_ERROR, "Error=%Xh Line=%u", pif_error, line);
 #endif
 	pifLog_SendAndExit();

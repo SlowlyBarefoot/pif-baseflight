@@ -1,6 +1,6 @@
 #include "drv_hcsr04.h"
 
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
 	#include "core/pif_log.h"
 #endif
 #include "sensor/pif_hc_sr04.h"
@@ -45,7 +45,7 @@ static void _evtHcSr04Distance(int32_t distance)
 
     if (temp != pretemp) {
         pifHcSr04_SetTemperature(&s_hcsr04, temp);
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
         pifLog_Printf(LT_INFO, "Temp=%f", temp);
 #endif
         pretemp = temp;

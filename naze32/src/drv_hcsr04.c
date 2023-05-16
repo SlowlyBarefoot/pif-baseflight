@@ -3,9 +3,6 @@
 #include "drv_gpio.h"
 #include "drv_hcsr04.h"
 
-#ifdef __PIF_DEBUG__
-	#include "core/pif_log.h"
-#endif
 #include "sensor/pif_hc_sr04.h"
 
 #ifdef SONAR
@@ -70,9 +67,6 @@ static void _evtHcSr04Distance(int32_t distance)
 
     if (temp != pretemp) {
         pifHcSr04_SetTemperature(&s_hcsr04, temp);
-#ifdef __PIF_DEBUG__
-        pifLog_Printf(LT_INFO, "Temp=%f", temp);
-#endif
         pretemp = temp;
     }
 }

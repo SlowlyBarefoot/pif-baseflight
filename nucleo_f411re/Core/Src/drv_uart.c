@@ -29,7 +29,7 @@ typedef struct {
 } uartPort_t;
 
 
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
 	static PifComm s_comm_log;
 	static uint16_t s_usLogTx;
 #endif
@@ -65,7 +65,7 @@ static BOOL actUartStartTransfer(PifComm* p_comm)
 	return FALSE;
 }
 
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
 
 static BOOL actLogStartTransfer(PifComm* p_comm)
 {
@@ -106,7 +106,7 @@ serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode, uint8_t per
         s = &uartPort[0];
         s->p_huart = &huart1;
     }
-#ifndef __PIF_DEBUG__
+#ifdef __PIF_NO_LOG__
     else if (port == UART_PORT_2) {
         s = &uartPort[1];
         s->p_huart = &huart2;
@@ -150,7 +150,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 		p_uart = &uartPort[0];
 	}
 	else if (huart->Instance == USART2) {
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
 		state = pifComm_EndGetTxData(&s_comm_log, s_usLogTx);
 		if (state & PIF_COMM_SEND_DATA_STATE_EMPTY) {
 			pifComm_FinishTransfer(&s_comm_log);

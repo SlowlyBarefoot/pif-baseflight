@@ -6,7 +6,7 @@ Config.Debug.compile.sloeber.extra.all=
 Config.Debug.compile.sloeber.extra.archive=
 Config.Debug.compile.sloeber.extra.assembly=
 Config.Debug.compile.sloeber.extra.c.compile=
-Config.Debug.compile.sloeber.extra.compile=-D__PIF_DEBUG__ -D__PIF_NO_LOG__ -D__PIF_LOG_COMMAND__ -DPWM_FREQUENCY=400 -DTC_FREQUENCY=400 -D__PIF_NO_USE_INLINE__
+Config.Debug.compile.sloeber.extra.compile=-D__PIF_DEBUG__ -D__PIF_LOG_COMMAND__ -DPWM_FREQUENCY=400 -DTC_FREQUENCY=400 -D__PIF_NO_USE_INLINE__
 Config.Debug.compile.sloeber.extra.cpp.compile=
 Config.Debug.compile.sloeber.extra.link=
 Config.Debug.compile.sloeber.size.custom=
@@ -16,7 +16,7 @@ Config.Debug.compile.sloeber.warning_level.custom=
 Config.Debug.other.IS_VERSION_CONTROLLED=false
 Config.Release.board.BOARD.ID=arduino_due_x_dbg
 Config.Release.board.BOARD.TXT=${SLOEBER_HOME}/arduinoPlugin/packages/arduino/hardware/sam/1.6.12/boards.txt
-Config.Release.board.PROGRAMMER.NAME=Default
+Config.Release.board.PROGRAMMER.NAME=
 Config.Release.board.UPLOAD.PORT=COM4
 Config.Release.compile.sloeber.extra.all=
 Config.Release.compile.sloeber.extra.archive=

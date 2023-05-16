@@ -18,10 +18,10 @@ typedef struct {
 } uartPort_t;
 
 
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
 	static PifComm s_comm_log;
 #endif
-static uartPort_t uartPort[3];
+static uartPort_t uartPort[4];
 
 
 static BOOL actSerial1SetBaudRate(PifComm* p_comm, uint32_t baudrate)
@@ -169,7 +169,55 @@ static uartPort_t *serialUSART3(portMode_t mode)
     return s;
 }
 
-#ifdef __PIF_DEBUG__
+static BOOL actSerial4SetBaudRate(PifComm* p_comm, uint32_t baudrate)
+{
+	(void)p_comm;
+
+	Serial.end();
+	Serial.begin(baudrate);
+	return TRUE;
+}
+
+static uint16_t actSerial4SendData(PifComm* p_comm, uint8_t* p_buffer, uint16_t size)
+{
+	(void)p_comm;
+
+    return Serial.write((char *)p_buffer, size);
+}
+
+static BOOL actSerial4ReceiveData(PifComm* p_comm, uint8_t* p_data)
+{
+	int rx_data;
+
+	(void)p_comm;
+
+	rx_data = Serial.read();
+	if (rx_data >= 0) {
+		*p_data = rx_data;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static uartPort_t *serialUSART4(portMode_t mode)
+{
+    uartPort_t *s;
+
+    s = &uartPort[3];
+
+	if (!pifComm_Init(&s->port.comm, PIF_ID_UART(3))) return NULL;
+	s->port.comm.act_set_baudrate = actSerial4SetBaudRate;
+	if (mode & MODE_RX) {
+		s->port.comm.act_receive_data = actSerial4ReceiveData;
+	}
+	if (mode & MODE_TX) {
+		s->port.comm.act_send_data = actSerial4SendData;
+	}
+
+    return s;
+}
+
+#ifndef __PIF_NO_LOG__
 
 static uint16_t actLogSendData(PifComm* p_comm, uint8_t* p_buffer, uint16_t size)
 {
@@ -228,6 +276,17 @@ serialPort_t *uartOpen(int num, uint32_t baudRate, portMode_t mode, uint8_t peri
     	}
         s = serialUSART3(mode);
     	if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, period, TRUE, "Comm-3")) return NULL;
+        break;
+
+    case UART_PORT_4:
+    	if (mode & MODE_SBUS) {
+    		Serial.begin(baudRate, (UARTClass::UARTModes)(US_MR_CHRL_8_BIT | US_MR_NBSTOP_2_BIT | UART_MR_PAR_EVEN));
+    	}
+    	else {
+			Serial.begin(baudRate);
+		}
+        s = serialUSART4(mode);
+    	if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, period, TRUE, "Comm-4")) return NULL;
         break;
 
     default:

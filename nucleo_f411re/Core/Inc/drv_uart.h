@@ -1,5 +1,5 @@
 #pragma once
 
-#ifdef __PIF_DEBUG__
+#ifndef __PIF_NO_LOG__
 	BOOL logOpen();
 #endif
