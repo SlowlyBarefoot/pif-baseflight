@@ -524,7 +524,7 @@ extern uint8_t rcOptions[CHECKBOXITEMS];
 extern int16_t failsafeCnt;
 
 extern int16_t debug[4];
-extern int16_t gyroADC[3], accADC[3], accSmooth[3], magADC[3];
+extern float gyroADC[3], accADC[3], accSmooth[3], magADC[3];
 extern int32_t accSum[3];
 extern uint32_t accTimeSum;
 extern int accSumCount;
@@ -551,7 +551,7 @@ extern int16_t servo[MAX_SERVOS];
 extern int16_t rcData[RC_CHANS];
 extern uint16_t rssi;                  // range: [0;1023]
 extern uint16_t vbat;                  // battery voltage in 0.1V steps
-extern int16_t telemTemperature1;      // gyro sensor temperature
+extern float telemTemperature1;      // gyro sensor temperature
 extern int32_t amperage;               // amperage read by current sensor in 0.01A steps
 extern int32_t mAhdrawn;              // milli ampere hours drawn from battery since start
 

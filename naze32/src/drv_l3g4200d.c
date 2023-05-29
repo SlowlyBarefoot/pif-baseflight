@@ -34,7 +34,7 @@ static PifImuSensorAlign gyroAlign = IMUS_ALIGN_CW0_DEG;
 static const char* hw_names = "L3G4200D";
 
 static BOOL l3g4200dInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
-static BOOL l3g4200dRead(sensorSet_t *p_sensor_set, int16_t *gyro_data);
+static BOOL l3g4200dRead(sensorSet_t *p_sensor_set, float *gyro_data);
 
 bool l3g4200dDetect(sensorSet_t *p_sensor_set, void* p_param)
 {
@@ -95,7 +95,7 @@ static BOOL l3g4200dInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
 }
 
 // Read 3 gyro values into user-provided buffer. No overrun checking is done.
-static BOOL l3g4200dRead(sensorSet_t *p_sensor_set, int16_t *gyro_data)
+static BOOL l3g4200dRead(sensorSet_t *p_sensor_set, float *gyro_data)
 {
     uint8_t buf[6];
     int16_t data[3];

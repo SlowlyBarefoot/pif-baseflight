@@ -62,7 +62,7 @@ static PifImuSensorAlign accAlign = IMUS_ALIGN_CW90_DEG;
 static const char* hw_names = "MMA8452";
 
 static BOOL mma8452Init(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
-static BOOL mma8452Read(sensorSet_t *p_sensor_set, int16_t *accelData);
+static BOOL mma8452Read(sensorSet_t *p_sensor_set, float *accelData);
 
 bool mma8452Detect(sensorSet_t *p_sensor_set, void* p_param)
 {
@@ -113,7 +113,7 @@ static BOOL mma8452Init(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
     return TRUE;
 }
 
-static BOOL mma8452Read(sensorSet_t *p_sensor_set, int16_t *accelData)
+static BOOL mma8452Read(sensorSet_t *p_sensor_set, float *accelData)
 {
     uint8_t buf[6];
     int16_t data[3];

@@ -65,7 +65,7 @@ struct sensorSet_t;
 typedef struct sensorSet_t sensorSet_t;
 
 typedef BOOL (*sensorInitFuncPtr)(sensorSet_t* p_sensor_set, PifImuSensorAlign align);// sensor init prototype
-typedef BOOL (*sensorReadFuncPtr)(sensorSet_t* p_sensor_set, int16_t *data);          // sensor read and align prototype
+typedef BOOL (*sensorReadFuncPtr)(sensorSet_t* p_sensor_set, float *data);          // sensor read and align prototype
 
 struct sensorSet_t {
     PifImuSensor imu_sensor;

@@ -64,7 +64,7 @@ PifI2cReturn actI2cRead(uint8_t addr, uint32_t iaddr, uint8_t isize, uint8_t* p_
 
 fail:
 #ifndef __PIF_NO_LOG__
-	pifLog_Printf(LT_ERROR, "I2CR(%Xh) IA=%lXh IS=%u S=%u E=%u", addr, iaddr, isize, size, error);
+	pifLog_Printf(LT_ERROR, "I2CR(%Xh) IA=%lXh IS=%u S=%u C=%u E=%u", addr, iaddr, isize, size, count, error);
 #endif
 	return IR_ERROR;
 }

@@ -12,7 +12,7 @@
 #define BMA280_PMU_RANGE   0x0F
 
 static BOOL bma280Init(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
-static BOOL bma280Read(sensorSet_t *p_sensor_set, int16_t *accelData);
+static BOOL bma280Read(sensorSet_t *p_sensor_set, float *accelData);
 
 static PifImuSensorAlign accAlign = IMUS_ALIGN_CW0_DEG;
 
@@ -47,7 +47,7 @@ static BOOL bma280Init(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
     return TRUE;
 }
 
-static BOOL bma280Read(sensorSet_t *p_sensor_set, int16_t *accelData)
+static BOOL bma280Read(sensorSet_t *p_sensor_set, float *accelData)
 {
     uint8_t buf[6];
     int16_t data[3];

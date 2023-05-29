@@ -10,13 +10,13 @@ static PifQmc5883 qmc5883;
 static const char* hw_names = "QMC5883";
 
 static BOOL qmc5883lInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
-static BOOL qmc5883lRead(sensorSet_t *p_sensor_set, int16_t *magData);
+static BOOL qmc5883lRead(sensorSet_t *p_sensor_set, float *magData);
 
 bool qmc5883Detect(sensorSet_t *p_sensor_set, void* p_param)
 {
     (void)p_param;
 
-    if (!pifQmc5883_Init(&qmc5883, PIF_ID_AUTO, &g_i2c_port, &p_sensor_set->imu_sensor)) return false;
+    if (!pifQmc5883_Detect(&g_i2c_port)) return false;
 
     p_sensor_set->mag.hardware = hw_names;
     p_sensor_set->mag.init = qmc5883lInit;
@@ -30,6 +30,8 @@ static BOOL qmc5883lInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
 
     pifImuSensor_SetMagAlign(&p_sensor_set->imu_sensor, align);
 
+    if (!pifQmc5883_Init(&qmc5883, PIF_ID_AUTO, &g_i2c_port, &p_sensor_set->imu_sensor)) return false;
+
     control_1.bit.mode = QMC5883_MODE_CONTIMUOUS;
     control_1.bit.odr = QMC5883_ODR_10HZ;
     control_1.bit.rng = QMC5883_RNG_2G;
@@ -38,7 +40,7 @@ static BOOL qmc5883lInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
     return TRUE;
 }
 
-static BOOL qmc5883lRead(sensorSet_t *p_sensor_set, int16_t *magData)
+static BOOL qmc5883lRead(sensorSet_t *p_sensor_set, float *magData)
 {
-    return pifImuSensor_ReadMag2(&p_sensor_set->imu_sensor, magData);
+    return pifImuSensor_ReadRawMag(&p_sensor_set->imu_sensor, magData);
 }

@@ -59,11 +59,11 @@ static void mpu6050CheckRevision(sensorSet_t *p_sensor_set);
 static void mpu6050SelfTest(void);
 #endif
 static BOOL dummyInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
-static BOOL dummyRead(sensorSet_t *p_sensor_set, int16_t *data);
+static BOOL dummyRead(sensorSet_t *p_sensor_set, float *data);
 static BOOL mpuAccInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
-static BOOL mpuAccRead(sensorSet_t *p_sensor_set, int16_t *acc_data);
+static BOOL mpuAccRead(sensorSet_t *p_sensor_set, float *acc_data);
 static BOOL mpuGyroInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align);
-static BOOL mpuGyroRead(sensorSet_t *p_sensor_set, int16_t *gyro_data);
+static BOOL mpuGyroRead(sensorSet_t *p_sensor_set, float *gyro_data);
 
 typedef struct mpu_access_t {
     mpuReadRegPtr read;
@@ -206,47 +206,35 @@ static void mpu3050Init(sensorSet_t *p_sensor_set)
 
 static void mpu6050Init(sensorSet_t *p_sensor_set)
 {
-    PifMpu60x0PwrMgmt1 pwr_mgmt_1;
-    PifMpu60x0Config config;
-    PifMpu60x0GyroConfig gyro_config;
-    PifMpu60x0AccelConfig accel_config;
+    PifMpu60x0Param param;
 
-    pifMpu60x0_Init(&mpu.mpu60x0, PIF_ID_AUTO, &g_i2c_port, MPU60X0_I2C_ADDR(0), &p_sensor_set->imu_sensor);
+    param.smplrt_div = 0;
 
-    pifI2cDevice_WriteRegByte(mpu.mpu60x0._p_i2c, MPU60X0_REG_SMPLRT_DIV, 0x00); // Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
+    param.clksel = MPU60X0_CLKSEL_PLL_ZGYRO;
 
-    pwr_mgmt_1.byte = 0;
-    pwr_mgmt_1.bit.clksel = MPU60X0_CLKSEL_PLL_ZGYRO;
-    pifI2cDevice_WriteRegByte(mpu.mpu60x0._p_i2c, MPU60X0_REG_PWR_MGMT_1, pwr_mgmt_1.byte); // Clock source = 3 (PLL with Z Gyro reference)
-    pif_Delay1ms(10);
-
-    config.byte = 0;
     // default lpf is 42Hz, 255 is special case of nolpf
     if (p_sensor_set->gyro.lpf == 255)
-        config.bit.dlpf_cfg = MPU60X0_DLPF_CFG_A260HZ_G256HZ;
+        param.dlpf_cfg = MPU60X0_DLPF_CFG_A260HZ_G256HZ;
     else if (p_sensor_set->gyro.lpf >= 188)
-        config.bit.dlpf_cfg = MPU60X0_DLPF_CFG_A184HZ_G188HZ;
+        param.dlpf_cfg = MPU60X0_DLPF_CFG_A184HZ_G188HZ;
     else if (p_sensor_set->gyro.lpf >= 98)
-        config.bit.dlpf_cfg = MPU60X0_DLPF_CFG_A94HZ_G98HZ;
+        param.dlpf_cfg = MPU60X0_DLPF_CFG_A94HZ_G98HZ;
     else if (p_sensor_set->gyro.lpf >= 42)
-        config.bit.dlpf_cfg = MPU60X0_DLPF_CFG_A44HZ_G42HZ;
+        param.dlpf_cfg = MPU60X0_DLPF_CFG_A44HZ_G42HZ;
     else if (p_sensor_set->gyro.lpf >= 20)
-        config.bit.dlpf_cfg = MPU60X0_DLPF_CFG_A21HZ_G20HZ;
+        param.dlpf_cfg = MPU60X0_DLPF_CFG_A21HZ_G20HZ;
     else if (p_sensor_set->gyro.lpf >= 10)
-        config.bit.dlpf_cfg = MPU60X0_DLPF_CFG_A10HZ_G10HZ;
+        param.dlpf_cfg = MPU60X0_DLPF_CFG_A10HZ_G10HZ;
     else
-        config.bit.dlpf_cfg = MPU60X0_DLPF_CFG_A5HZ_G5HZ;
-    pifI2cDevice_WriteRegByte(mpu.mpu60x0._p_i2c, MPU60X0_REG_CONFIG, config.byte);
+        param.dlpf_cfg = MPU60X0_DLPF_CFG_A5HZ_G5HZ;
 
     // Gyro config
-    gyro_config.byte = 0;
-    gyro_config.bit.fs_sel = MPU60X0_FS_SEL_2000DPS;
-    pifMpu60x0_SetGyroConfig(&mpu.mpu60x0, gyro_config); // full-scale 2kdps gyro range
+    param.fs_sel = MPU60X0_FS_SEL_2000DPS;
 
     // Accel scale 8g (4096 LSB/g)
-    accel_config.byte = 0;
-    accel_config.bit.afs_sel = MPU60X0_AFS_SEL_8G;
-    pifMpu60x0_SetAccelConfig(&mpu.mpu60x0, accel_config);
+    param.afs_sel = MPU60X0_AFS_SEL_8G;
+
+    pifMpu60x0_Init(&mpu.mpu60x0, PIF_ID_AUTO, &g_i2c_port, MPU60X0_I2C_ADDR(0), &param, &p_sensor_set->imu_sensor);
 
     // Data ready interrupt configuration
     pifI2cDevice_WriteRegByte(mpu.mpu60x0._p_i2c, MPU60X0_REG_INT_PIN_CFG, 0 << 7 | 0 << 6 | 0 << 5 | 1 << 4 | 0 << 3 | 0 << 2 | 1 << 1 | 0 << 0);  // INT_RD_CLEAR_DIS, I2C_BYPASS_EN
@@ -334,7 +322,7 @@ static BOOL dummyInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
     return TRUE;
 }
 
-static BOOL dummyRead(sensorSet_t *p_sensor_set, int16_t *data)
+static BOOL dummyRead(sensorSet_t *p_sensor_set, float *data)
 {
     (void)p_sensor_set;
     (void)data;
@@ -353,14 +341,14 @@ static BOOL mpuGyroInit(sensorSet_t *p_sensor_set, PifImuSensorAlign align)
     return TRUE;
 }
 
-static BOOL mpuAccRead(sensorSet_t *p_sensor_set, int16_t *acc_data)
+static BOOL mpuAccRead(sensorSet_t *p_sensor_set, float *acc_data)
 {
-    return pifImuSensor_ReadAccel2(&p_sensor_set->imu_sensor, acc_data);
+    return pifImuSensor_ReadRawAccel(&p_sensor_set->imu_sensor, acc_data);
 }
 
-static BOOL mpuGyroRead(sensorSet_t *p_sensor_set, int16_t *gyro_data)
+static BOOL mpuGyroRead(sensorSet_t *p_sensor_set, float *gyro_data)
 {
-    return pifImuSensor_ReadGyro2(&p_sensor_set->imu_sensor, gyro_data);
+    return pifImuSensor_ReadRawGyro(&p_sensor_set->imu_sensor, gyro_data);
 }
 
 static void mpu6050CheckRevision(sensorSet_t *p_sensor_set)
