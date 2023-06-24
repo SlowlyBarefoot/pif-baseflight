@@ -58,36 +58,36 @@ bool gy86Detect(sensorSet_t *p_sensor_set, void* p_param)
 
     memset(&param, 0, sizeof(PifGy86Param));
 
-    param.mpu60x0.clksel = MPU60X0_CLKSEL_PLL_ZGYRO;
+    param.mpu60x0_clksel = MPU60X0_CLKSEL_PLL_ZGYRO;
     // default lpf is 42Hz, 255 is special case of nolpf
     if (p_sensor_set->gyro.lpf == 255)
-    	param.mpu60x0.dlpf_cfg = MPU60X0_DLPF_CFG_A260HZ_G256HZ;
+    	param.mpu60x0_dlpf_cfg = MPU60X0_DLPF_CFG_A260HZ_G256HZ;
     else if (p_sensor_set->gyro.lpf >= 188)
-    	param.mpu60x0.dlpf_cfg = MPU60X0_DLPF_CFG_A184HZ_G188HZ;
+    	param.mpu60x0_dlpf_cfg = MPU60X0_DLPF_CFG_A184HZ_G188HZ;
     else if (p_sensor_set->gyro.lpf >= 98)
-    	param.mpu60x0.dlpf_cfg = MPU60X0_DLPF_CFG_A94HZ_G98HZ;
+    	param.mpu60x0_dlpf_cfg = MPU60X0_DLPF_CFG_A94HZ_G98HZ;
     else if (p_sensor_set->gyro.lpf >= 42)
-    	param.mpu60x0.dlpf_cfg = MPU60X0_DLPF_CFG_A44HZ_G42HZ;
+    	param.mpu60x0_dlpf_cfg = MPU60X0_DLPF_CFG_A44HZ_G42HZ;
     else if (p_sensor_set->gyro.lpf >= 20)
-    	param.mpu60x0.dlpf_cfg = MPU60X0_DLPF_CFG_A21HZ_G20HZ;
+    	param.mpu60x0_dlpf_cfg = MPU60X0_DLPF_CFG_A21HZ_G20HZ;
     else if (p_sensor_set->gyro.lpf >= 10)
-    	param.mpu60x0.dlpf_cfg = MPU60X0_DLPF_CFG_A10HZ_G10HZ;
+    	param.mpu60x0_dlpf_cfg = MPU60X0_DLPF_CFG_A10HZ_G10HZ;
     else
-    	param.mpu60x0.dlpf_cfg = MPU60X0_DLPF_CFG_A5HZ_G5HZ;
-    param.mpu60x0.fs_sel = MPU60X0_FS_SEL_2000DPS;
-    param.mpu60x0.afs_sel = MPU60X0_AFS_SEL_8G;
+    	param.mpu60x0_dlpf_cfg = MPU60X0_DLPF_CFG_A5HZ_G5HZ;
+    param.mpu60x0_fs_sel = MPU60X0_FS_SEL_2000DPS;
+    param.mpu60x0_afs_sel = MPU60X0_AFS_SEL_8G;
     param.mpu60x0_i2c_mst_clk = MPU60X0_I2C_MST_CLK_400KHZ;
 
-    param.hmc5883.gain = HMC5883_GAIN_1_3GA;
-    param.hmc5883.samples = HMC5883_SAMPLES_8;
-    param.hmc5883.data_rate = HMC5883_DATARATE_75HZ;
-    param.hmc5883.mode = HMC5883_MODE_CONTINOUS;
+    param.hmc5883_gain = HMC5883_GAIN_1_3GA;
+    param.hmc5883_samples = HMC5883_SAMPLES_8;
+    param.hmc5883_data_rate = HMC5883_DATARATE_75HZ;
+    param.hmc5883_mode = HMC5883_MODE_CONTINOUS;
 
 #ifdef BARO
-    param.ms5611.disallow_yield_id = DISALLOW_YIELD_ID_I2C;
-    param.ms5611.osr = MS5611_OSR_4096;
-    param.ms5611.read_period = 25;												// 25ms
-    param.ms5611.evt_read = p_sensor_set->baro.evt_read;
+    param.disallow_yield_id = DISALLOW_YIELD_ID_I2C;
+    param.ms5611_osr = MS5611_OSR_4096;
+    param.ms5611_read_period = 25;												// 25ms
+    param.ms5611_evt_read = p_sensor_set->baro.evt_read;
 #endif
 
     // initialize the device

@@ -42,11 +42,10 @@ static BOOL actUartSetBaudRate(PifComm* p_comm, uint32_t baudrate)
 
 	if (p_uart->p_huart->Init.BaudRate == baudrate) return TRUE;
 
+	HAL_UART_Abort_IT(p_uart->p_huart);
 	HAL_UART_DeInit(p_uart->p_huart);
 	p_uart->p_huart->Init.BaudRate = baudrate;
-	if (HAL_UART_Init(p_uart->p_huart) != HAL_OK) {
-		return FALSE;
-	}
+	if (HAL_UART_Init(p_uart->p_huart) != HAL_OK) return FALSE;
 	return TRUE;
 }
 
@@ -98,7 +97,7 @@ BOOL logOpen()
 serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode, uint8_t period)
 {
     uartPort_t *s = NULL;
-	uint16_t rx_size = 16;
+	uint16_t rx_size = 16, tx_size = 64;
 	uint16_t tmp;
 	const char* names[] = { "Comm-1", "Comm-2", "Comm-3" };
 
@@ -123,8 +122,8 @@ serialPort_t *uartOpen(int port, uint32_t baudRate, portMode_t mode, uint8_t per
 	s->init = TRUE;
 	if (!pifComm_Init(&s->port.comm, PIF_ID_UART(port - 1))) return FALSE;
 	if (!pifComm_AttachTask(&s->port.comm, TM_PERIOD_MS, period, TRUE, names[port - 1])) return FALSE;
-	if (!pifComm_AllocRxBuffer(&s->port.comm, rx_size, rx_size / 2)) return FALSE;
-	if (!pifComm_AllocTxBuffer(&s->port.comm, 64)) return FALSE;
+	if (!pifComm_AllocRxBuffer(&s->port.comm, rx_size, 100)) return FALSE;
+	if (!pifComm_AllocTxBuffer(&s->port.comm, tx_size)) return FALSE;
 	s->port.comm.act_set_baudrate = actUartSetBaudRate;
 	s->port.comm.act_start_transfer = actUartStartTransfer;
 
@@ -208,7 +207,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 BOOL serialSetBaudRate(serialPort_t* instance, uint32_t baudRate)
 {
-   	return (*instance->comm.act_set_baudrate)(&instance->comm, baudRate);
+   	if (!(*instance->comm.act_set_baudrate)(&instance->comm, baudRate)) return FALSE;
+	if (!serialStartReceiveFunc(&instance->comm)) return FALSE;
+	return TRUE;
 }
 
 BOOL serialStartReceiveFunc(PifComm* p_comm)

@@ -26,9 +26,8 @@ static uartPort_t uartPort[4];
 
 static BOOL actSerial1SetBaudRate(PifComm* p_comm, uint32_t baudrate)
 {
-	(void)p_comm;
-
 	Serial1.end();
+	pifComm_AbortRx(p_comm);
 	Serial1.begin(baudrate);
 	return TRUE;
 }
@@ -74,9 +73,8 @@ static uartPort_t *serialUSART1(portMode_t mode)
 
 static BOOL actSerial2SetBaudRate(PifComm* p_comm, uint32_t baudrate)
 {
-	(void)p_comm;
-
 	Serial2.end();
+	pifComm_AbortRx(p_comm);
 	Serial2.begin(baudrate);
 	return TRUE;
 }
@@ -123,9 +121,8 @@ static uartPort_t *serialUSART2(portMode_t mode)
 
 static BOOL actSerial3SetBaudRate(PifComm* p_comm, uint32_t baudrate)
 {
-	(void)p_comm;
-
 	Serial3.end();
+	pifComm_AbortRx(p_comm);
 	Serial3.begin(baudrate);
 	return TRUE;
 }
